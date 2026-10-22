@@ -133,6 +133,8 @@ function todayStr(){const d=new Date(),p=n=>String(n).padStart(2,"0");return `${
 function download(name,text){const b=new Blob([text],{type:"application/json"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
 function seatedSet(){const set=new Set();DATA.seat.rows.forEach(r=>r.slice(1).forEach(n=>{if(n&&n!=="空座")set.add(n);}));DATA.seat.front.forEach(n=>set.add(n));return set;}
 let HW_EXP=new Set();
+let HW_BATCH=false;       // 作业批量模式
+let HW_SEL=new Set();     // 批量选中的学生
 
 /* ---------- 启动 ---------- */
 function boot(){
@@ -435,7 +437,7 @@ function vHomework(){
       <input class="sel" id="hwContent" placeholder="作业内容，如：练习册P35-37">
       <button class="sel" style="background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff;border:none;font-weight:700;cursor:pointer" onclick="hwAdd()">+ 添加作业</button>
     </div>
-    <div class="note">点作业卡片展开 / 收起，点学生姓名标记已交。数据仅存本设备浏览器。</div>
+    <div class="note">点作业卡片展开 / 收起；点学生姓名切换「已交/未交」；开启「批量模式」可多选后一键标记已交。数据仅存本设备浏览器。</div>
   </div>`;
   if(!HW.length) h+=`<div class="empty">暂无作业记录，先添加一条。</div>`;
   HW.slice().reverse().forEach(it=>{
@@ -447,12 +449,27 @@ function vHomework(){
         <div style="font-size:13px;color:${sub===total?'var(--ok)':'var(--c2)'};font-weight:800;white-space:nowrap">已交 ${sub}/${total} · ${total?Math.round(sub/total*100):0}%</div>
       </div>`;
     if(exp){
-      h+=`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px">`;
-      stu().forEach(s=>{const on=done.has(s.n);h+=`<span class="chip" style="background:${on?'#e8f5e9':'#fff'};border:1.5px solid ${on?'#43a047':'#e2e8f0'};color:${on?'#2e7d32':'var(--ink)'};cursor:pointer" onclick="event.stopPropagation();hwToggle(${it.id},'${s.n}')">${on?'✓ ':''}${s.n}</span>`;});
-      h+=`</div>`;
       const undone=stu().map(s=>s.n).filter(n=>!done.has(n));
+      h+=`<div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="sel" style="background:#e8f5e9;border:1.5px solid #43a047;color:#2e7d32;cursor:pointer;font-weight:700" onclick="event.stopPropagation();hwAllDone(${it.id})">✅ 全部已交</button>
+        <button class="sel" style="background:#fff;border:1.5px solid #e2e8f0;cursor:pointer" onclick="event.stopPropagation();hwClear(${it.id})">🧹 清空</button>
+        <button class="sel" style="background:${HW_BATCH?'var(--c1)':'#fff'};color:${HW_BATCH?'#fff':'var(--ink)'};border:1.5px solid ${HW_BATCH?'var(--c1)':'#e2e8f0'};cursor:pointer;font-weight:700" onclick="event.stopPropagation();HW_BATCH=!HW_BATCH;HW_SEL.clear();go('hw')">${HW_BATCH?'✓ 批量模式开':'批量模式'}</button>
+        ${HW_BATCH?`<button class="sel" style="background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff;border:none;font-weight:700;cursor:pointer" onclick="event.stopPropagation();hwBatchApply(${it.id})">批量标记已交 (${HW_SEL.size})</button>`:''}
+      </div>`;
+      h+=`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px">`;
+      stu().forEach(s=>{
+        const on=done.has(s.n);const sel=HW_SEL.has(s.n);
+        const clickFn = HW_BATCH
+          ? `HW_SEL.has('${s.n}')?HW_SEL.delete('${s.n}'):HW_SEL.add('${s.n}');go('hw')`
+          : `hwToggle(${it.id},'${s.n}')`;
+        const bg = HW_BATCH ? (sel?'#bbdefb':'#fff') : (on?'#e8f5e9':'#fff');
+        const bd = HW_BATCH ? (sel?'#1e88e5':'#e2e8f0') : (on?'#43a047':'#e2e8f0');
+        const col= HW_BATCH ? (sel?'#0d47a1':'var(--ink)') : (on?'#2e7d32':'var(--ink)');
+        h+=`<span class="chip" style="background:${bg};border:1.5px solid ${bd};color:${col};cursor:pointer" onclick="event.stopPropagation();${clickFn}">${(HW_BATCH&&sel)?'◉ ':(on?'✓ ':'')}${s.n}</span>`;
+      });
+      h+=`</div>`;
       h+=`<div style="margin-top:8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <span style="font-size:13px;font-weight:700;color:${undone.length?'var(--red)':'var(--ok)'}">未交 ${undone.length} 人</span>
+        <span style="font-size:13px;font-weight:700;color:${undone.length?'var(--red)':'var(--ok)'}">未交 ${undone.length} 人${HW_BATCH?` · 已选 ${HW_SEL.size} 人`:''}</span>
         ${undone.length?`<button class="sel" style="background:#ffebee;border:1.5px solid #ef5350;color:#c62828;cursor:pointer;font-weight:700" onclick="event.stopPropagation();hwPenalty(${it.id})">未交每人扣分</button>`:''}
         ${it.penalty?`<span style="font-size:12px;color:var(--mut)">已扣 ${it.penalty} 分/人</span>`:''}
       </div>`;
@@ -472,6 +489,9 @@ function vHomework(){
 }
 function hwAdd(){const date=document.getElementById("hwDate").value||todayStr();const subject=document.getElementById("hwSub").value;const content=document.getElementById("hwContent").value.trim();if(!content){alert("请填写作业内容");return;}const HW=LS("g16_hw",[]);HW.push({id:Date.now(),date,subject,content,due:"",done:[]});LSset("g16_hw",HW);go("hw");}
 function hwToggle(id,name){const HW=LS("g16_hw",[]);const it=HW.find(x=>x.id===id);if(!it)return;it.done=it.done||[];const i=it.done.indexOf(name);if(i>=0)it.done.splice(i,1);else it.done.push(name);LSset("g16_hw",HW);go("hw");}
+function hwAllDone(id){const HW=LS("g16_hw",[]);const it=HW.find(x=>x.id===id);if(!it)return;it.done=stu().map(s=>s.n);LSset("g16_hw",HW);go("hw");}
+function hwClear(id){const HW=LS("g16_hw",[]);const it=HW.find(x=>x.id===id);if(!it)return;it.done=[];LSset("g16_hw",HW);go("hw");}
+function hwBatchApply(id){if(!HW_SEL.size){alert("请先在批量模式中点击选中学生");return;}const HW=LS("g16_hw",[]);const it=HW.find(x=>x.id===id);if(!it)return;it.done=it.done||[];HW_SEL.forEach(n=>{if(!it.done.includes(n))it.done.push(n);});LSset("g16_hw",HW);HW_SEL.clear();HW_BATCH=false;go("hw");}
 function hwDel(id){if(!confirm("确定删除该作业记录？"))return;LSset("g16_hw",LS("g16_hw",[]).filter(x=>x.id!==id));go("hw");}
 function hwPenalty(id){
   const HW=LS("g16_hw",[]);const it=HW.find(x=>x.id===id);if(!it)return;
