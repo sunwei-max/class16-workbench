@@ -17,14 +17,21 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 header{background:linear-gradient(135deg,var(--c1) 0%,var(--c2) 100%);color:#fff;padding:18px 16px 14px;position:sticky;top:0;z-index:30;box-shadow:0 4px 20px rgba(30,58,138,.35)}
 header .t1{font-size:20px;font-weight:800;letter-spacing:1px}
 header .t2{font-size:12px;opacity:.85;margin-top:3px}
-nav{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
-nav button{border:none;background:rgba(255,255,255,.15);color:#fff;padding:9px 4px;border-radius:12px;font-size:13.5px;cursor:pointer;transition:.2s;white-space:nowrap;text-align:center}
-nav button.on{background:#fff;color:var(--c1);font-weight:800}
+/* 分组子切换（头部内，半透明白风格，自动换行不滑动） */
+#subnav{display:none;flex-wrap:wrap;gap:6px;margin-top:10px}
+#subnav button{border:1.5px solid rgba(255,255,255,.4);background:rgba(255,255,255,.16);color:#fff;padding:5px 13px;border-radius:999px;font-size:12.5px;cursor:pointer;transition:.2s;white-space:nowrap}
+#subnav button.on{background:#fff;color:var(--c1);font-weight:800;border-color:#fff}
+/* 底部固定 Tab 栏 */
+#tabbar{position:fixed;left:0;right:0;bottom:0;z-index:50;display:flex;background:#fff;border-top:1px solid #e8edf3;box-shadow:0 -2px 14px rgba(15,23,42,.1);padding:5px 4px calc(6px + env(safe-area-inset-bottom));max-width:920px;margin:0 auto}
+#tabbar button{flex:1;border:none;background:transparent;color:#94a3b8;padding:4px 2px;border-radius:12px;font-size:11px;cursor:pointer;transition:.2s;display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.15}
+#tabbar button .ic{font-size:21px;line-height:1}
+#tabbar button.on{color:var(--c1)}
+#tabbar button.on .ic{transform:translateY(-1px)}
 #examBar{display:flex;gap:6px;overflow-x:auto;margin-top:9px;scrollbar-width:none}
 #examBar::-webkit-scrollbar{display:none}
 #examBar button{flex-shrink:0;border:none;background:rgba(255,255,255,.18);color:#fff;padding:5px 14px;border-radius:8px;font-size:13px;cursor:pointer;transition:.2s;white-space:nowrap;border:1.5px solid transparent}
 #examBar button.on{background:#fff;color:var(--c1);font-weight:800}
-main{max-width:920px;margin:0 auto;padding:14px 12px 40px}
+main{max-width:920px;margin:0 auto;padding:14px 12px 86px}
 /* ---------- 通用 ---------- */
 .card{background:var(--card);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 10px rgba(15,23,42,.06)}
 .card h3{font-size:15px;margin-bottom:12px;display:flex;align-items:center;gap:6px}
@@ -107,12 +114,13 @@ a{color:var(--c1)}
   <header>
     <div class="t1">高三16班 · 班级工作台</div>
     <div class="t2" id="hSub"></div>
-    <nav id="nav"></nav>
     <div id="examBar"></div>
+    <div id="subnav"></div>
   </header>
   <main id="main"></main>
   <div id="toast"></div>
   <footer id="foot"></footer>
+  <nav id="tabbar"></nav>
 </div>
 
 <script>
@@ -140,12 +148,23 @@ let HW_MODE="normal";     // normal | batch | praise | critic
 let HW_SEL=new Set();     // 批量选中的学生
 let HW_VAL=2;             // 表扬/批评默认分值
 
+/* ---------- 底部 Tab 分组 ---------- */
+const TABS=[
+  {k:"ov", ic:"📊", label:"概览", items:["ov"]},
+  {k:"sc", ic:"📈", label:"成绩", items:["sc","pf","wk","sj","rp"]},
+  {k:"cl", ic:"🏫", label:"班级", items:["st","roll","py"]},
+  {k:"rc", ic:"📝", label:"记录", items:["hw","pt"]},
+];
+const FNAME={ov:"概览",sc:"成绩",pf:"一生一档",wk:"弱科补差",sj:"学科分析",rp:"家长通报",st:"座位表",roll:"点名",py:"培优补差",hw:"作业",pt:"积分"};
+const TAB_OF={}; TABS.forEach(t=>t.items.forEach(k=>TAB_OF[k]=t.k));
+let CUR_TAB="ov";
+function switchTab(k){const t=TABS.find(x=>x.k===k);if(t)go(t.items[0]);}
+
 /* ---------- 启动 ---------- */
 function boot(){
   document.getElementById("hSub").textContent=`${DATA.meta.cls} · ${CUR_EXAM} · 更新于 ${DATA.meta.date}`;
-  const tabs=[["ov","📊 概览"],["sc","📋 成绩"],["pf","👤 一生一档"],["py","🌟 培优补差"],["wk","🎯 弱科补差"],["st","🪑 座位表"],["sj","📚 学科"],["rp","📢 家长通报"],["roll","✋ 点名"],["hw","📝 作业"],["pt","💯 积分"]];
-  document.getElementById("nav").innerHTML=tabs.map(t=>`<button data-t="${t[0]}">${t[1]}</button>`).join("");
-  document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>go(b.dataset.t));
+  document.getElementById("tabbar").innerHTML=TABS.map(t=>`<button data-tab="${t.k}"><span class="ic">${t.ic}</span>${t.label}</button>`).join("");
+  document.querySelectorAll("#tabbar button").forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
   document.getElementById("examBar").innerHTML=DATA.meta.examOrder.map(n=>`<button data-e="${n}" onclick="setExam('${n}')">${n}</button>`).join("");
   document.getElementById("foot").textContent=`高三16班班级工作台 · 教师自用 · 作业/积分/点名数据仅存于本设备浏览器`;
   go("ov");
@@ -155,10 +174,17 @@ function refreshExamUI(){
   document.getElementById("hSub").textContent=`${DATA.meta.cls} · ${CUR_EXAM} · 更新于 ${DATA.meta.date}`;
   document.querySelectorAll("#examBar button").forEach(b=>b.classList.toggle("on",b.dataset.e===CUR_EXAM));
 }
-function go(t){CUR=t;document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));refreshExamUI();
+function go(t){
+  CUR=t; CUR_TAB=TAB_OF[t];
+  document.querySelectorAll("#tabbar button").forEach(b=>b.classList.toggle("on",b.dataset.tab===CUR_TAB));
+  refreshExamUI();
+  const items=TABS.find(x=>x.k===CUR_TAB).items;
+  const sub=document.getElementById("subnav");
+  if(items.length>1){sub.style.display="flex";sub.innerHTML=items.map(k=>`<button class="${k===CUR?'on':''}" onclick="go('${k}')">${FNAME[k]}</button>`).join("");}
+  else{sub.style.display="none";sub.innerHTML="";}
   const M=document.getElementById("main");
   M.innerHTML={ov:vOverview,sc:vScores,pf:vProfile,py:vPeiyou,wk:vWeak,st:vSeat,sj:vSubject,rp:vReport,roll:vRoll,hw:vHomework,pt:vPoints}[t]();
-  M.scrollTop=0;
+  M.scrollTop=0; window.scrollTo(0,0);
 }
 const jumpStu=n=>{CUR_STU=n;go("pf");};
 const badge=e=>`<span class="badge" style="background:${eC(e)}">${EDGE[e]}</span>`;
