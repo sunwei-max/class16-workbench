@@ -17,9 +17,8 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 header{background:linear-gradient(135deg,var(--c1) 0%,var(--c2) 100%);color:#fff;padding:18px 16px 14px;position:sticky;top:0;z-index:30;box-shadow:0 4px 20px rgba(30,58,138,.35)}
 header .t1{font-size:20px;font-weight:800;letter-spacing:1px}
 header .t2{font-size:12px;opacity:.85;margin-top:3px}
-nav{display:flex;gap:8px;overflow-x:auto;margin-top:12px;scrollbar-width:none;padding-bottom:2px}
-nav::-webkit-scrollbar{display:none}
-nav button{flex-shrink:0;border:none;background:rgba(255,255,255,.15);color:#fff;padding:8px 13px;border-radius:999px;font-size:13.5px;cursor:pointer;transition:.2s;white-space:nowrap}
+nav{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+nav button{border:none;background:rgba(255,255,255,.15);color:#fff;padding:9px 4px;border-radius:12px;font-size:13.5px;cursor:pointer;transition:.2s;white-space:nowrap;text-align:center}
 nav button.on{background:#fff;color:var(--c1);font-weight:800}
 #examBar{display:flex;gap:6px;overflow-x:auto;margin-top:9px;scrollbar-width:none}
 #examBar::-webkit-scrollbar{display:none}
@@ -55,6 +54,7 @@ select.sel{min-width:96px}
 .sec-title{font-size:13px;color:var(--mut);margin:14px 2px 8px;font-weight:700}
 .empty{color:#94a3b8;text-align:center;padding:30px 0;font-size:14px}
 .note{font-size:12px;color:var(--mut);line-height:1.6}
+.hw-hint{font-size:12px;color:var(--mut);line-height:1.5;margin-top:8px;padding:7px 10px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px}
 /* 座位 */
 .seat-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px}
 .seat-grid2{display:grid;grid-template-columns:46px repeat(9,1fr);gap:5px;min-width:520px}
@@ -95,6 +95,9 @@ a{color:var(--c1)}
 .srctag{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:6px;background:#eef2ff;color:#3b4cca;vertical-align:middle}
 .srctag.src-hw{background:#fdecea;color:#c62828}
 .srctag.src-praise{background:#e8f5e9;color:#2e7d32}
+.srctag.src-critic{background:#fdecea;color:#c62828}
+#toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%) translateY(8px);background:rgba(30,42,120,.96);color:#fff;padding:10px 20px;border-radius:999px;font-size:14px;font-weight:700;z-index:999;opacity:0;pointer-events:none;transition:opacity .22s,transform .22s;box-shadow:0 6px 20px rgba(15,23,42,.25)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
@@ -108,6 +111,7 @@ a{color:var(--c1)}
     <div id="examBar"></div>
   </header>
   <main id="main"></main>
+  <div id="toast"></div>
   <footer id="foot"></footer>
 </div>
 
@@ -132,9 +136,9 @@ function LSset(k,v){localStorage.setItem(k,JSON.stringify(v));}
 function todayStr(){const d=new Date(),p=n=>String(n).padStart(2,"0");return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;}
 function download(name,text){const b=new Blob([text],{type:"application/json"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
 function seatedSet(){const set=new Set();DATA.seat.rows.forEach(r=>r.slice(1).forEach(n=>{if(n&&n!=="空座")set.add(n);}));DATA.seat.front.forEach(n=>set.add(n));return set;}
-let HW_EXP=new Set();
-let HW_BATCH=false;       // 作业批量模式
+let HW_MODE="normal";     // normal | batch | praise | critic
 let HW_SEL=new Set();     // 批量选中的学生
+let HW_VAL=2;             // 表扬/批评默认分值
 
 /* ---------- 启动 ---------- */
 function boot(){
@@ -159,7 +163,7 @@ function go(t){CUR=t;document.querySelectorAll("#nav button").forEach(b=>b.class
 const jumpStu=n=>{CUR_STU=n;go("pf");};
 const badge=e=>`<span class="badge" style="background:${eC(e)}">${EDGE[e]}</span>`;
 const weakIco=w=>(w||[]).map(s=>`<span class="wb" style="background:${SCOL[s]}" title="${s}班内后1/4">${s[0]}</span>`).join("");
-const SRC={praise:"表扬",hw:"作业未交",py:"辅导",manual:"手动"};
+const SRC={praise:"表扬",critic:"批评",hw:"作业未交",py:"辅导",manual:"手动"};
 const srcTag=s=>s?` <span class="srctag src-${s}">${SRC[s]||s}</span>`:"";
 const progTag=p=>p==null?"":(p>0?`<span class="tag-up">▲${p}</span>`:(p<0?`<span class="tag-down">▼${-p}</span>`:"<span style='color:#94a3b8'>–</span>"));
 
@@ -437,45 +441,49 @@ function vHomework(){
       <input class="sel" id="hwContent" placeholder="作业内容，如：练习册P35-37">
       <button class="sel" style="background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff;border:none;font-weight:700;cursor:pointer" onclick="hwAdd()">+ 添加作业</button>
     </div>
-    <div class="note">点作业卡片展开 / 收起；点学生姓名切换「已交/未交」；开启「批量模式」可多选后一键标记已交。数据仅存本设备浏览器。</div>
+    <div class="note">点学生姓名切换「已交/未交」；顶部按钮可一键「全部已交/全部未交」、开启「批量模式」圈选后批量标记；「表扬/批评」模式点学生即加减分（计入积分）。数据仅存本设备浏览器。</div>
   </div>`;
   if(!HW.length) h+=`<div class="empty">暂无作业记录，先添加一条。</div>`;
   HW.slice().reverse().forEach(it=>{
     const done=new Set(it.done||[]);const total=stu().length, sub=done.size;
-    const exp=HW_EXP.has(it.id);
+    const undone=stu().map(s=>s.n).filter(n=>!done.has(n));
+    const isBatch=HW_MODE==="batch", isPraise=HW_MODE==="praise", isCritic=HW_MODE==="critic";
     h+=`<div class="card" style="padding:12px">
-      <div onclick="HW_EXP.has(${it.id})?HW_EXP.delete(${it.id}):HW_EXP.add(${it.id});go('hw')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
         <div><b>${it.date}</b> · ${it.subject} · ${it.content||"(无内容)"}</div>
         <div style="font-size:13px;color:${sub===total?'var(--ok)':'var(--c2)'};font-weight:800;white-space:nowrap">已交 ${sub}/${total} · ${total?Math.round(sub/total*100):0}%</div>
       </div>`;
-    if(exp){
-      const undone=stu().map(s=>s.n).filter(n=>!done.has(n));
-      h+=`<div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <button class="sel" style="background:#e8f5e9;border:1.5px solid #43a047;color:#2e7d32;cursor:pointer;font-weight:700" onclick="event.stopPropagation();hwAllDone(${it.id})">✅ 全部已交</button>
-        <button class="sel" style="background:#fff;border:1.5px solid #e2e8f0;cursor:pointer" onclick="event.stopPropagation();hwClear(${it.id})">🧹 清空</button>
-        <button class="sel" style="background:${HW_BATCH?'var(--c1)':'#fff'};color:${HW_BATCH?'#fff':'var(--ink)'};border:1.5px solid ${HW_BATCH?'var(--c1)':'#e2e8f0'};cursor:pointer;font-weight:700" onclick="event.stopPropagation();HW_BATCH=!HW_BATCH;HW_SEL.clear();go('hw')">${HW_BATCH?'✓ 批量模式开':'批量模式'}</button>
-        ${HW_BATCH?`<button class="sel" style="background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff;border:none;font-weight:700;cursor:pointer" onclick="event.stopPropagation();hwBatchApply(${it.id})">批量标记已交 (${HW_SEL.size})</button>`:''}
-      </div>`;
-      h+=`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px">`;
-      stu().forEach(s=>{
-        const on=done.has(s.n);const sel=HW_SEL.has(s.n);
-        const clickFn = HW_BATCH
-          ? `HW_SEL.has('${s.n}')?HW_SEL.delete('${s.n}'):HW_SEL.add('${s.n}');go('hw')`
-          : `hwToggle(${it.id},'${s.n}')`;
-        const bg = HW_BATCH ? (sel?'#bbdefb':'#fff') : (on?'#e8f5e9':'#fff');
-        const bd = HW_BATCH ? (sel?'#1e88e5':'#e2e8f0') : (on?'#43a047':'#e2e8f0');
-        const col= HW_BATCH ? (sel?'#0d47a1':'var(--ink)') : (on?'#2e7d32':'var(--ink)');
-        h+=`<span class="chip" style="background:${bg};border:1.5px solid ${bd};color:${col};cursor:pointer" onclick="event.stopPropagation();${clickFn}">${(HW_BATCH&&sel)?'◉ ':(on?'✓ ':'')}${s.n}</span>`;
-      });
-      h+=`</div>`;
-      h+=`<div style="margin-top:8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <span style="font-size:13px;font-weight:700;color:${undone.length?'var(--red)':'var(--ok)'}">未交 ${undone.length} 人${HW_BATCH?` · 已选 ${HW_SEL.size} 人`:''}</span>
-        ${undone.length?`<button class="sel" style="background:#ffebee;border:1.5px solid #ef5350;color:#c62828;cursor:pointer;font-weight:700" onclick="event.stopPropagation();hwPenalty(${it.id})">未交每人扣分</button>`:''}
-        ${it.penalty?`<span style="font-size:12px;color:var(--mut)">已扣 ${it.penalty} 分/人</span>`:''}
-      </div>`;
-      if(it.due) h+=`<div style="font-size:12px;color:var(--mut);margin-top:6px">截止：${it.due}</div>`;
-    }
-    h+=`<div style="margin-top:8px"><span style="font-size:12px;color:#ef5350;cursor:pointer" onclick="event.stopPropagation();hwDel(${it.id})">删除该作业</span></div></div>`;
+    h+=`<div style="margin-top:10px;display:flex;gap:7px;align-items:center;flex-wrap:wrap">
+      <button class="sel" style="background:#e8f5e9;border:1.5px solid #43a047;color:#2e7d32;cursor:pointer;font-weight:700" onclick="event.stopPropagation();hwAllDone(${it.id})">✅ 全部已交</button>
+      <button class="sel" style="background:#fff;border:1.5px solid #e2e8f0;cursor:pointer" onclick="event.stopPropagation();hwClear(${it.id})">🧹 全部未交</button>
+      <button class="sel" style="background:${isBatch?'var(--c1)':'#fff'};color:${isBatch?'#fff':'var(--ink)'};border:1.5px solid ${isBatch?'var(--c1)':'#e2e8f0'};cursor:pointer;font-weight:700" onclick="event.stopPropagation();setHWMode('batch')">${isBatch?'✓ 批量模式':'批量模式'}</button>
+      ${isBatch?`<button class="sel" style="background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff;border:none;font-weight:700;cursor:pointer" onclick="event.stopPropagation();hwBatchApply(${it.id})">批量标记已交 (${HW_SEL.size})</button>`:''}
+      <button class="sel" style="background:${isPraise?'#2e7d32':'#fff'};color:${isPraise?'#fff':'#2e7d32'};border:1.5px solid ${isPraise?'#2e7d32':'#a5d6a7'};cursor:pointer;font-weight:700" onclick="event.stopPropagation();setHWMode('praise')">👍 表扬</button>
+      <button class="sel" style="background:${isCritic?'#c62828':'#fff'};color:${isCritic?'#fff':'#c62828'};border:1.5px solid ${isCritic?'#c62828':'#ef9a9a'};cursor:pointer;font-weight:700" onclick="event.stopPropagation();setHWMode('critic')">👎 批评</button>
+      ${(isPraise||isCritic)?`<span style="font-size:12px;color:var(--mut)">分值</span><input class="sel" type="number" value="${HW_VAL}" onchange="HW_VAL=parseInt(this.value)||1;go('hw')" style="width:62px">`:''}
+    </div>`;
+    if(isBatch) h+=`<div class="hw-hint">批量模式：点选学生（蓝底◉），再点「批量标记已交」一次性提交。</div>`;
+    if(isPraise) h+=`<div class="hw-hint" style="color:#2e7d32;background:#e8f5e9;border-color:#a5d6a7">表扬模式：点学生即 +${HW_VAL} 分，计入积分·表扬（可改分值）。</div>`;
+    if(isCritic) h+=`<div class="hw-hint" style="color:#c62828;background:#fdecea;border-color:#ef9a9a">批评模式：点学生即 -${HW_VAL} 分，计入积分·批评（可改分值）。</div>`;
+    h+=`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px">`;
+    stu().forEach(s=>{
+      const on=done.has(s.n);const sel=HW_SEL.has(s.n);
+      let clickFn,bg,bd,col,pre="";
+      if(isBatch){clickFn=`HW_SEL.has('${s.n}')?HW_SEL.delete('${s.n}'):HW_SEL.add('${s.n}');go('hw')`;bg=sel?'#bbdefb':'#fff';bd=sel?'#1e88e5':'#e2e8f0';col=sel?'#0d47a1':'var(--ink)';pre=sel?'◉ ':'';}
+      else if(isPraise){clickFn=`hwPraise('${s.n}')`;bg='#fff';bd='#e2e8f0';col='var(--ink)';pre=on?'✓ ':'';}
+      else if(isCritic){clickFn=`hwCritic('${s.n}')`;bg='#fff';bd='#e2e8f0';col='var(--ink)';pre=on?'✓ ':'';}
+      else {clickFn=`hwToggle(${it.id},'${s.n}')`;bg=on?'#e8f5e9':'#fff';bd=on?'#43a047':'#e2e8f0';col=on?'#2e7d32':'var(--ink)';pre=on?'✓ ':'';}
+      h+=`<span class="chip" style="background:${bg};border:1.5px solid ${bd};color:${col};cursor:pointer" onclick="event.stopPropagation();${clickFn}">${pre}${s.n}</span>`;
+    });
+    h+=`</div>`;
+    h+=`<div style="margin-top:8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <span style="font-size:13px;font-weight:700;color:${undone.length?'var(--red)':'var(--ok)'}">未交 ${undone.length} 人${isBatch?` · 已选 ${HW_SEL.size} 人`:''}</span>
+      ${undone.length?`<button class="sel" style="background:#ffebee;border:1.5px solid #ef5350;color:#c62828;cursor:pointer;font-weight:700" onclick="event.stopPropagation();hwPenalty(${it.id})">未交每人扣分</button>`:''}
+      ${it.penalty?`<span style="font-size:12px;color:var(--mut)">已扣 ${it.penalty} 分/人</span>`:''}
+      <span style="margin-left:auto;font-size:12px;color:#ef5350;cursor:pointer" onclick="event.stopPropagation();hwDel(${it.id})">删除</span>
+    </div>`;
+    if(it.due) h+=`<div style="font-size:12px;color:var(--mut);margin-top:6px">截止：${it.due}</div>`;
+    h+=`</div>`;
   });
   if(HW.length){
     const stat=stu().map(s=>{let j=0;HW.forEach(it=>(it.done||[]).includes(s.n)&&j++);return {n:s.n,j};}).sort((a,b)=>a.j-b.j);
@@ -491,7 +499,12 @@ function hwAdd(){const date=document.getElementById("hwDate").value||todayStr();
 function hwToggle(id,name){const HW=LS("g16_hw",[]);const it=HW.find(x=>x.id===id);if(!it)return;it.done=it.done||[];const i=it.done.indexOf(name);if(i>=0)it.done.splice(i,1);else it.done.push(name);LSset("g16_hw",HW);go("hw");}
 function hwAllDone(id){const HW=LS("g16_hw",[]);const it=HW.find(x=>x.id===id);if(!it)return;it.done=stu().map(s=>s.n);LSset("g16_hw",HW);go("hw");}
 function hwClear(id){const HW=LS("g16_hw",[]);const it=HW.find(x=>x.id===id);if(!it)return;it.done=[];LSset("g16_hw",HW);go("hw");}
-function hwBatchApply(id){if(!HW_SEL.size){alert("请先在批量模式中点击选中学生");return;}const HW=LS("g16_hw",[]);const it=HW.find(x=>x.id===id);if(!it)return;it.done=it.done||[];HW_SEL.forEach(n=>{if(!it.done.includes(n))it.done.push(n);});LSset("g16_hw",HW);HW_SEL.clear();HW_BATCH=false;go("hw");}
+function hwBatchApply(id){if(!HW_SEL.size){alert("请先在批量模式中点击选中学生");return;}const HW=LS("g16_hw",[]);const it=HW.find(x=>x.id===id);if(!it)return;it.done=it.done||[];HW_SEL.forEach(n=>{if(!it.done.includes(n))it.done.push(n);});LSset("g16_hw",HW);HW_SEL.clear();HW_MODE="normal";go("hw");}
+function setHWMode(m){HW_MODE=(HW_MODE===m)?"normal":m;if(HW_MODE!=="batch")HW_SEL.clear();go("hw");}
+function ptPush(name,delta,source,reason){const PT=LS("g16_pt",[]);PT.push({id:Date.now()+Math.floor(Math.random()*1e6),name,delta,reason,source});LSset("g16_pt",PT);}
+function hwPraise(name){const v=Math.abs(HW_VAL);ptPush(name,v,"praise","作业表扬");toast("👍 "+name+" +"+v);go("hw");}
+function hwCritic(name){const v=-Math.abs(HW_VAL);ptPush(name,v,"critic","作业批评");toast("👎 "+name+" "+v);go("hw");}
+function toast(msg){const t=document.getElementById("toast");if(!t)return;t.textContent=msg;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),1200);}
 function hwDel(id){if(!confirm("确定删除该作业记录？"))return;LSset("g16_hw",LS("g16_hw",[]).filter(x=>x.id!==id));go("hw");}
 function hwPenalty(id){
   const HW=LS("g16_hw",[]);const it=HW.find(x=>x.id===id);if(!it)return;
