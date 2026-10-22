@@ -90,6 +90,11 @@ select.sel{min-width:96px}
 footer{text-align:center;color:#94a3b8;font-size:11px;padding:16px 0 6px}
 a{color:var(--c1)}
 .lb{display:inline-block;padding:4px 10px;border-radius:8px;font-size:12px;font-weight:700;background:#f1f5f9;color:var(--ink);cursor:pointer;border:1.5px solid #e2e8f0;margin:3px}
+.mini{width:22px;height:22px;line-height:20px;text-align:center;border-radius:6px;border:1.5px solid #e2e8f0;background:#fff;color:#334155;font-weight:800;font-size:14px;cursor:pointer;padding:0}
+.mini:hover{background:#f1f5f9}
+.srctag{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:6px;background:#eef2ff;color:#3b4cca;vertical-align:middle}
+.srctag.src-hw{background:#fdecea;color:#c62828}
+.srctag.src-praise{background:#e8f5e9;color:#2e7d32}
 </style>
 </head>
 <body>
@@ -152,6 +157,8 @@ function go(t){CUR=t;document.querySelectorAll("#nav button").forEach(b=>b.class
 const jumpStu=n=>{CUR_STU=n;go("pf");};
 const badge=e=>`<span class="badge" style="background:${eC(e)}">${EDGE[e]}</span>`;
 const weakIco=w=>(w||[]).map(s=>`<span class="wb" style="background:${SCOL[s]}" title="${s}班内后1/4">${s[0]}</span>`).join("");
+const SRC={praise:"表扬",hw:"作业未交",py:"辅导",manual:"手动"};
+const srcTag=s=>s?` <span class="srctag src-${s}">${SRC[s]||s}</span>`:"";
 const progTag=p=>p==null?"":(p>0?`<span class="tag-up">▲${p}</span>`:(p<0?`<span class="tag-down">▼${-p}</span>`:"<span style='color:#94a3b8'>–</span>"));
 
 /* ---------- 概览 ---------- */
@@ -248,18 +255,37 @@ function vProfile(){
 }
 
 /* ---------- 培优补差 ---------- */
+/* ---------- 培优补差（含辅导次数记录） ---------- */
+function pyCell(name, type){
+  const P=LS("g16_py",{})[name]||{peiyou:0,bucha:0};
+  const v=P[type]||0, t=type==="peiyou"?"培优":"补差";
+  return `<span style="display:inline-flex;align-items:center;gap:2px">
+    <button class="mini" onclick="event.stopPropagation();pyAdd('${name}','${type}',-1)" title="${t}-1">−</button>
+    <b style="min-width:15px;text-align:center;${v>0?'color:#e65100':''}">${v}</b>
+    <button class="mini" onclick="event.stopPropagation();pyAdd('${name}','${type}',1)" title="${t}+1">＋</button></span>`;
+}
+function pyAdd(name,type,delta){
+  const P=LS("g16_py",{}); if(!P[name])P[name]={peiyou:0,bucha:0};
+  P[name][type]=Math.max(0,(P[name][type]||0)+delta); LSset("g16_py",P); go("py");
+}
 function vPeiyou(){
   const py=stu().filter(x=>x.e==="y"||x.e==="u").sort((a,b)=>(a.r||99)-(b.r||99));
   const fo=stu().filter(x=>(x.w||[]).length>=2).sort((a,b)=>(a.r||99)-(b.r||99));
   const cd=stu().filter(x=>x.e==="d").sort((a,b)=>(a.r||99)-(b.r||99));
-  const card=x=>`<tr class="rowc" onclick="jumpStu('${x.n}')"><td><b>${x.n}</b>${x.m?' <span title="目标生">⭐</span>':""}</td><td>${x.z??"—"}</td><td>${x.r}</td><td>${badge(x.e)}</td><td>${weakIco(x.w)}</td><td style="color:var(--mut);font-size:12px">${x.w&&x.w.length?x.w.join("、"):"—"}</td></tr>`;
+  const card=(x,type)=>`<tr class="rowc" onclick="jumpStu('${x.n}')"><td><b>${x.n}</b>${x.m?' <span title="目标生">⭐</span>':""}</td><td>${x.z??"—"}</td><td>${x.r}</td><td>${badge(x.e)}</td><td>${weakIco(x.w)}</td><td style="color:var(--mut);font-size:12px">${x.w&&x.w.length?x.w.join("、"):"—"}</td><td style="text-align:center">${pyCell(x.n,type)}</td></tr>`;
   let h=`<div class="card"><h3>🌟 培优名单（达本一 / 本一线上10分）共 ${py.length} 人</h3>
-    <div class="note" style="margin-bottom:6px">重点冲击本一，关注其薄弱科——优生也常有短板，定点拔高。</div>
-    <div style="overflow-x:auto"><table><tr><th>姓名</th><th>总分</th><th>班名</th><th>状态</th><th>薄弱</th><th>薄弱科</th></tr>${py.map(card).join("")}</table></div></div>`;
+    <div class="note" style="margin-bottom:6px">重点冲击本一，关注其薄弱科——优生也常有短板，定点拔高。点末列「＋/−」记录一次辅导。</div>
+    <div style="overflow-x:auto"><table><tr><th>姓名</th><th>总分</th><th>班名</th><th>状态</th><th>薄弱</th><th>薄弱科</th><th>培优次数</th></tr>${py.map(x=>card(x,"peiyou")).join("")}</table></div></div>`;
   h+=`<div class="card"><h3>🎯 补差名单 · 重点关注（≥2科班内后1/4）共 ${fo.length} 人</h3>
-    <div style="overflow-x:auto"><table><tr><th>姓名</th><th>总分</th><th>班名</th><th>状态</th><th>薄弱</th><th>薄弱科</th></tr>${fo.map(card).join("")}</table></div></div>`;
+    <div style="overflow-x:auto"><table><tr><th>姓名</th><th>总分</th><th>班名</th><th>状态</th><th>薄弱</th><th>薄弱科</th><th>补差次数</th></tr>${fo.map(x=>card(x,"bucha")).join("")}</table></div></div>`;
   h+=`<div class="card"><h3>⚠ 补差名单 · 本一线下10分临界生 ${cd.length} 人</h3>
-    <div style="overflow-x:auto"><table><tr><th>姓名</th><th>总分</th><th>班名</th><th>状态</th><th>薄弱</th><th>薄弱科</th></tr>${cd.map(card).join("")}</table></div></div>`;
+    <div style="overflow-x:auto"><table><tr><th>姓名</th><th>总分</th><th>班名</th><th>状态</th><th>薄弱</th><th>薄弱科</th><th>补差次数</th></tr>${cd.map(x=>card(x,"bucha")).join("")}</table></div></div>`;
+  const P=LS("g16_py",{});
+  const rows=Object.keys(P).map(n=>({n,py:P[n].peiyou||0,bc:P[n].bucha||0,tot:(P[n].peiyou||0)+(P[n].bucha||0)})).filter(x=>x.tot>0).sort((a,b)=>b.tot-a.tot);
+  h+=`<div class="card"><h3>📋 辅导次数汇总（单击姓名看档案）</h3>`;
+  if(!rows.length) h+=`<div class="empty">暂无辅导记录，在上方名单点「＋」即可记一次。</div>`;
+  else h+=`<div style="overflow-x:auto"><table><tr><th>姓名</th><th>培优</th><th>补差</th><th>合计</th></tr>${rows.map(r=>`<tr class="rowc" onclick="jumpStu('${r.n}')"><td><b>${r.n}</b></td><td style="color:#e65100;font-weight:800">${r.py}</td><td style="color:#e65100;font-weight:800">${r.bc}</td><td style="font-weight:800">${r.tot}</td></tr>`).join("")}</table></div>`;
+  h+=`</div>`;
   return h;
 }
 
@@ -424,14 +450,21 @@ function vHomework(){
       h+=`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px">`;
       stu().forEach(s=>{const on=done.has(s.n);h+=`<span class="chip" style="background:${on?'#e8f5e9':'#fff'};border:1.5px solid ${on?'#43a047':'#e2e8f0'};color:${on?'#2e7d32':'var(--ink)'};cursor:pointer" onclick="event.stopPropagation();hwToggle(${it.id},'${s.n}')">${on?'✓ ':''}${s.n}</span>`;});
       h+=`</div>`;
+      const undone=stu().map(s=>s.n).filter(n=>!done.has(n));
+      h+=`<div style="margin-top:8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <span style="font-size:13px;font-weight:700;color:${undone.length?'var(--red)':'var(--ok)'}">未交 ${undone.length} 人</span>
+        ${undone.length?`<button class="sel" style="background:#ffebee;border:1.5px solid #ef5350;color:#c62828;cursor:pointer;font-weight:700" onclick="event.stopPropagation();hwPenalty(${it.id})">未交每人扣分</button>`:''}
+        ${it.penalty?`<span style="font-size:12px;color:var(--mut)">已扣 ${it.penalty} 分/人</span>`:''}
+      </div>`;
       if(it.due) h+=`<div style="font-size:12px;color:var(--mut);margin-top:6px">截止：${it.due}</div>`;
     }
     h+=`<div style="margin-top:8px"><span style="font-size:12px;color:#ef5350;cursor:pointer" onclick="event.stopPropagation();hwDel(${it.id})">删除该作业</span></div></div>`;
   });
   if(HW.length){
     const stat=stu().map(s=>{let j=0;HW.forEach(it=>(it.done||[]).includes(s.n)&&j++);return {n:s.n,j};}).sort((a,b)=>a.j-b.j);
-    h+=`<div class="card"><h3>📊 学生作业完成统计（应交 ${HW.length} 次）</h3><div style="overflow-x:auto"><table><tr><th>姓名</th><th>已交</th><th>未交</th><th>完成率</th></tr>`;
-    stat.forEach(x=>{const rate=Math.round(x.j/HW.length*100);h+=`<tr><td><b>${x.n}</b></td><td style="color:var(--ok)">${x.j}</td><td style="color:${x.j<HW.length?'var(--red)':'var(--mut)'}">${HW.length-x.j}</td><td>${rate}%</td></tr>`;});
+    const penMap={};LS("g16_pt",[]).forEach(e=>{if(e.source==="hw"&&e.hwId!=null)penMap[e.name]=(penMap[e.name]||0)+e.delta;});
+    h+=`<div class="card"><h3>📊 学生作业完成统计（应交 ${HW.length} 次）</h3><div style="overflow-x:auto"><table><tr><th>姓名</th><th>已交</th><th>未交</th><th>完成率</th><th>作业扣分</th></tr>`;
+    stat.forEach(x=>{const rate=Math.round(x.j/HW.length*100);const pen=penMap[x.n]||0;h+=`<tr><td><b>${x.n}</b></td><td style="color:var(--ok)">${x.j}</td><td style="color:${x.j<HW.length?'var(--red)':'var(--mut)'}">${HW.length-x.j}</td><td>${rate}%</td><td style="color:${pen<0?'var(--red)':'var(--mut)'}">${pen||0}</td></tr>`;});
     h+=`</table></div></div>`;
   }
   h+=`<div class="toolbar" style="margin-top:6px"><button class="sel" onclick="hwExport()" style="background:#fff;border:1.5px solid #e2e8f0;cursor:pointer">⬇ 导出备份</button><label class="sel" style="background:#fff;border:1.5px solid #e2e8f0;cursor:pointer;text-align:center">⬆ 导入<input type="file" accept="application/json" style="display:none" onchange="hwImport(this)"></label></div>`;
@@ -440,6 +473,19 @@ function vHomework(){
 function hwAdd(){const date=document.getElementById("hwDate").value||todayStr();const subject=document.getElementById("hwSub").value;const content=document.getElementById("hwContent").value.trim();if(!content){alert("请填写作业内容");return;}const HW=LS("g16_hw",[]);HW.push({id:Date.now(),date,subject,content,due:"",done:[]});LSset("g16_hw",HW);go("hw");}
 function hwToggle(id,name){const HW=LS("g16_hw",[]);const it=HW.find(x=>x.id===id);if(!it)return;it.done=it.done||[];const i=it.done.indexOf(name);if(i>=0)it.done.splice(i,1);else it.done.push(name);LSset("g16_hw",HW);go("hw");}
 function hwDel(id){if(!confirm("确定删除该作业记录？"))return;LSset("g16_hw",LS("g16_hw",[]).filter(x=>x.id!==id));go("hw");}
+function hwPenalty(id){
+  const HW=LS("g16_hw",[]);const it=HW.find(x=>x.id===id);if(!it)return;
+  const done=new Set(it.done||[]);
+  const undone=stu().map(s=>s.n).filter(n=>!done.has(n));
+  if(!undone.length){alert("全部已交，无需扣分");return;}
+  const def=it.penalty||-2;
+  const pen=parseInt(prompt(`「${it.date} ${it.subject}」未交 ${undone.length} 人。每人扣几分？（负数，如 -2）`,String(def)),10);
+  if(isNaN(pen))return;
+  let PT=LS("g16_pt",[]).filter(e=>!(e.source==="hw"&&e.hwId===id)); // 清旧，避免重复扣分
+  undone.forEach(n=>PT.push({id:Date.now()+Math.floor(Math.random()*1e6),name:n,delta:pen,reason:`${it.date} ${it.subject}作业未交`,source:"hw",hwId:id}));
+  LSset("g16_pt",PT);
+  it.penalty=pen;LSset("g16_hw",HW);go("hw");
+}
 function hwExport(){const d={hw:LS("g16_hw",[]),pt:LS("g16_pt",[]),roll:LS("g16_roll",{})};download("ban16_作业积分点名备份.json",JSON.stringify(d,null,2));}
 function hwImport(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(d.hw)LSset("g16_hw",d.hw);if(d.pt)LSset("g16_pt",d.pt);if(d.roll)LSset("g16_roll",d.roll);alert("导入成功");go(CUR);}catch(e){alert("导入失败：文件格式错误");}};r.readAsText(f);}
 
@@ -451,19 +497,34 @@ function vPoints(){
   let h=`<div class="card"><h3>💯 班级积分</h3>
     <div class="toolbar">
       <select class="sel" id="ptName">${stu().map(s=>`<option>${s.n}</option>`).join("")}</select>
-      <input class="sel" id="ptDelta" type="number" placeholder="分值(+/-)" style="max-width:96px">
-      <input class="sel" id="ptReason" placeholder="事由，如：作业优秀">
+      <input class="sel" id="ptDelta" type="number" placeholder="分值(+/-)" style="max-width:90px">
+      <input class="sel" id="ptReason" placeholder="事由，如：作业优秀" style="max-width:120px">
       <button class="sel" style="background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff;border:none;font-weight:700;cursor:pointer" onclick="ptAdd()">+ 记录</button>
-    </div></div>`;
+    </div>
+    <div class="toolbar">
+      <span style="font-size:13px;color:var(--mut)">快捷表扬</span>
+      <input class="sel" id="ptPraise" type="number" value="2" style="max-width:60px"> 分
+      <button class="sel" style="background:#e8f5e9;border:1.5px solid #43a047;color:#2e7d32;cursor:pointer;font-weight:700" onclick="praiseAdd()">👍 表扬加分</button>
+    </div>
+    <div class="note">表扬 / 作业未交自动写入积分；手动记录用于其它加减分。</div>
+  </div>`;
   h+=`<div class="card"><h3>🏅 积分排行榜</h3><div style="overflow-x:auto"><table><tr><th>#</th><th>姓名</th><th>积分</th></tr>`;
   board.forEach(([n,v],i)=>{h+=`<tr><td>${i+1}</td><td><b>${n}</b></td><td style="font-weight:800;color:${v>0?'var(--ok)':v<0?'var(--red)':'var(--ink)'}">${v>0?'+':''}${v}</td></tr>`;});
   h+=`</table></div></div>`;
   h+=`<div class="card"><h3>🧾 最近记录</h3>`;
   if(!PT.length)h+=`<div class="empty">暂无积分记录</div>`;
-  PT.slice().reverse().slice(0,30).forEach(e=>{h+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 2px;border-bottom:1px solid #f1f5f9"><div><b>${e.name}</b> <span style="color:var(--mut);font-size:12px">${e.reason||""}</span></div><div style="display:flex;gap:10px;align-items:center"><span style="font-weight:800;color:${e.delta>0?'var(--ok)':'var(--red)'}">${e.delta>0?'+':''}${e.delta}</span><span style="color:#ef5350;cursor:pointer;font-size:12px" onclick="ptDel(${e.id})">删</span></div></div>`;});
+  PT.slice().reverse().slice(0,30).forEach(e=>{h+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 2px;border-bottom:1px solid #f1f5f9"><div><b>${e.name}</b>${srcTag(e.source)} <span style="color:var(--mut);font-size:12px">${e.reason||""}</span></div><div style="display:flex;gap:10px;align-items:center"><span style="font-weight:800;color:${e.delta>0?'var(--ok)':'var(--red)'}">${e.delta>0?'+':''}${e.delta}</span><span style="color:#ef5350;cursor:pointer;font-size:12px" onclick="ptDel(${e.id})">删</span></div></div>`;});
   h+=`</div>`;
   h+=`<div class="toolbar" style="margin-top:6px"><button class="sel" onclick="hwExport()" style="background:#fff;border:1.5px solid #e2e8f0;cursor:pointer">⬇ 导出备份</button><label class="sel" style="background:#fff;border:1.5px solid #e2e8f0;cursor:pointer;text-align:center">⬆ 导入<input type="file" accept="application/json" style="display:none" onchange="ptImport(this)"></label></div>`;
   return h;
+}
+function praiseAdd(){
+  const name=document.getElementById("ptName").value;
+  if(!name){alert("请先选择学生");return;}
+  const v=parseInt(document.getElementById("ptPraise").value,10);
+  if(isNaN(v)||v<=0){alert("表扬分值为正数");return;}
+  const PT=LS("g16_pt",[]);PT.push({id:Date.now()+Math.floor(Math.random()*1e6),name,delta:v,reason:"表扬",source:"praise"});
+  LSset("g16_pt",PT);go("pt");
 }
 function ptAdd(){const name=document.getElementById("ptName").value;const delta=parseInt(document.getElementById("ptDelta").value,10);const reason=document.getElementById("ptReason").value.trim();if(!name||isNaN(delta)||delta===0){alert("请选择学生并填写非零分值");return;}const PT=LS("g16_pt",[]);PT.push({id:Date.now(),name,delta,reason});LSset("g16_pt",PT);go("pt");}
 function ptDel(id){LSset("g16_pt",LS("g16_pt",[]).filter(e=>e.id!==id));go("pt");}
