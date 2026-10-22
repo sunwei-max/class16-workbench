@@ -31,7 +31,7 @@ header .t1{font-size:20px;font-weight:800;letter-spacing:1px}
 header .t2{font-size:12px;opacity:.85;margin-top:3px}
 nav{display:flex;gap:8px;overflow-x:auto;margin-top:12px;scrollbar-width:none;padding-bottom:2px}
 nav::-webkit-scrollbar{display:none}
-nav button{flex-shrink:0;border:none;background:rgba(255,255,255,.15);color:#fff;padding:8px 15px;border-radius:999px;font-size:14px;cursor:pointer;transition:.2s}
+nav button{flex-shrink:0;border:none;background:rgba(255,255,255,.15);color:#fff;padding:8px 13px;border-radius:999px;font-size:13.5px;cursor:pointer;transition:.2s;white-space:nowrap}
 nav button.on{background:#fff;color:var(--c1);font-weight:800}
 main{max-width:920px;margin:0 auto;padding:14px 12px 40px}
 /* ---------- 通用 ---------- */
@@ -57,21 +57,23 @@ tr.rowc:hover{background:#f5f7ff}
 .tag-up{color:var(--ok);font-weight:800}
 .tag-down{color:var(--red);font-weight:800}
 input.sel,select.sel{padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;outline:none;background:#fff}
-select.sel{min-width:110px}
+select.sel{min-width:96px}
 .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
-.toolbar input{flex:1;min-width:140px}
+.toolbar input,.toolbar select{flex:1;min-width:120px}
 .sec-title{font-size:13px;color:var(--mut);margin:14px 2px 8px;font-weight:700}
 .empty{color:#94a3b8;text-align:center;padding:30px 0;font-size:14px}
+.note{font-size:12px;color:var(--mut);line-height:1.6}
 /* 座位 */
-.seat-grid{display:grid;grid-template-columns:repeat(9,1fr);gap:5px}
-.seat{border-radius:8px;padding:5px 2px;text-align:center;cursor:pointer;border:2px solid #94a3b8;position:relative;min-height:52px;display:flex;flex-direction:column;justify-content:center}
+.seat-grid2{display:grid;grid-template-columns:46px repeat(9,1fr);gap:5px}
+.seat-label{display:flex;align-items:center;justify-content:center;background:#4f4f4f;color:#fff;font-weight:700;font-size:11px;border-radius:6px}
+.podium-span{grid-column:span 7;background:#334155;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;border-radius:8px;font-size:14px}
+.seat{border-radius:8px;padding:5px 2px;text-align:center;cursor:pointer;border:2px solid #94a3b8;position:relative;min-height:50px;display:flex;flex-direction:column;justify-content:center}
 .seat .nm{font-size:12.5px;font-weight:800;line-height:1.1}
 .seat .wk{font-size:9px;margin-top:2px;letter-spacing:1px}
 .seat .zz{position:absolute;top:-6px;right:-6px;width:16px;height:16px;background:var(--red);color:#fff;border-radius:50%;font-size:9px;line-height:16px;font-weight:800}
 .seat.empty-s{border:2px dashed #cbd5e1;background:#fff;color:#94a3b8;font-size:11px;cursor:default}
-.podium-row{display:flex;justify-content:center;gap:10px;margin:10px 0 2px;align-items:center}
-.podium{background:#334155;color:#fff;padding:7px 60px;border-radius:8px;font-weight:800;font-size:14px}
-.front-p{border-radius:8px;padding:6px 14px;font-size:13px;font-weight:800;border:2px solid #94a3b8;cursor:pointer}
+.front-seat{min-height:44px}
+.seat.big{min-height:56px}
 .blackboard{text-align:center;color:#64748b;font-size:12px;margin-top:8px;letter-spacing:4px}
 .legend{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:12px;font-size:11px;color:var(--mut)}
 .legend i{display:inline-block;width:13px;height:13px;border-radius:4px;vertical-align:-2px;margin-right:3px;border:1px solid #94a3b8}
@@ -91,6 +93,7 @@ select.sel{min-width:110px}
 .report .names b{color:#9a6b00}
 footer{text-align:center;color:#94a3b8;font-size:11px;padding:16px 0 6px}
 a{color:var(--c1)}
+.lb{display:inline-block;padding:4px 10px;border-radius:8px;font-size:12px;font-weight:700;background:#f1f5f9;color:var(--ink);cursor:pointer;border:1.5px solid #e2e8f0;margin:3px}
 </style>
 </head>
 <body>
@@ -156,20 +159,28 @@ const FULL={"语文":150,"数学":150,"英语":150,"物理":100,"化学":100,"�
 const stu=()=>DATA.students; const byN=n=>stu().find(s=>s.n===n);
 const eC=s=>EBG[s]||"#fff";
 
+/* ---------- 本地存储（作业/积分/点名） ---------- */
+function LS(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
+function LSset(k,v){localStorage.setItem(k,JSON.stringify(v));}
+function todayStr(){const d=new Date(),p=n=>String(n).padStart(2,"0");return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;}
+function download(name,text){const b=new Blob([text],{type:"application/json"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
+function seatedSet(){const set=new Set();DATA.seat.rows.forEach(r=>r.slice(1).forEach(n=>{if(n&&n!=="空座")set.add(n);}));DATA.seat.front.forEach(n=>set.add(n));return set;}
+let HW_EXP=new Set();
+
 /* ---------- 启动 ---------- */
 function boot(){
   document.getElementById("gate").style.display="none";
   document.getElementById("app").style.display="block";
   document.getElementById("hSub").textContent=`${DATA.meta.exam} · 口令已解锁 · 更新于 ${DATA.meta.date}`;
-  const tabs=[["ov","📊 概览"],["sc","📋 成绩"],["pf","👤 一生一档"],["wk","🎯 弱科补差"],["st","🪑 座位表"],["sj","📚 学科分析"],["rp","📢 家长通报"]];
+  const tabs=[["ov","📊 概览"],["sc","📋 成绩"],["pf","👤 一生一档"],["py","🌟 培优补差"],["wk","🎯 弱科补差"],["st","🪑 座位表"],["sj","📚 学科"],["rp","📢 家长通报"],["roll","✋ 点名"],["hw","📝 作业"],["pt","💯 积分"]];
   document.getElementById("nav").innerHTML=tabs.map(t=>`<button data-t="${t[0]}">${t[1]}</button>`).join("");
   document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>go(b.dataset.t));
-  document.getElementById("foot").textContent=`高三16班班级工作台 · 仅限本班老师与家长使用 · 请勿外传`;
+  document.getElementById("foot").textContent=`高三16班班级工作台 · 仅限本班老师与家长使用 · 作业/积分/点名数据仅存于本设备浏览器`;
   go("ov");
 }
 function go(t){CUR=t;document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
   const M=document.getElementById("main");
-  M.innerHTML={ov:vOverview,sc:vScores,pf:vProfile,wk:vWeak,st:vSeat,sj:vSubject,rp:vReport}[t]();
+  M.innerHTML={ov:vOverview,sc:vScores,pf:vProfile,py:vPeiyou,wk:vWeak,st:vSeat,sj:vSubject,rp:vReport,roll:vRoll,hw:vHomework,pt:vPoints}[t]();
   M.scrollTop=0;
 }
 const jumpStu=n=>{CUR_STU=n;go("pf");};
@@ -270,6 +281,22 @@ function vProfile(){
   return h;
 }
 
+/* ---------- 培优补差 ---------- */
+function vPeiyou(){
+  const py=stu().filter(x=>x.e==="y"||x.e==="u").sort((a,b)=>(a.r||99)-(b.r||99));
+  const fo=stu().filter(x=>(x.w||[]).length>=2).sort((a,b)=>(a.r||99)-(b.r||99));
+  const cd=stu().filter(x=>x.e==="d").sort((a,b)=>(a.r||99)-(b.r||99));
+  const card=x=>`<tr class="rowc" onclick="jumpStu('${x.n}')"><td><b>${x.n}</b>${x.m?' <span title="目标生">⭐</span>':""}</td><td>${x.z??"—"}</td><td>${x.r}</td><td>${badge(x.e)}</td><td>${weakIco(x.w)}</td><td style="color:var(--mut);font-size:12px">${x.w&&x.w.length?x.w.join("、"):"—"}</td></tr>`;
+  let h=`<div class="card"><h3>🌟 培优名单（达本一 / 本一线上10分）共 ${py.length} 人</h3>
+    <div class="note" style="margin-bottom:6px">重点冲击本一，关注其薄弱科——优生也常有短板，定点拔高。</div>
+    <div style="overflow-x:auto"><table><tr><th>姓名</th><th>总分</th><th>班名</th><th>状态</th><th>薄弱</th><th>薄弱科</th></tr>${py.map(card).join("")}</table></div></div>`;
+  h+=`<div class="card"><h3>🎯 补差名单 · 重点关注（≥2科班内后1/4）共 ${fo.length} 人</h3>
+    <div style="overflow-x:auto"><table><tr><th>姓名</th><th>总分</th><th>班名</th><th>状态</th><th>薄弱</th><th>薄弱科</th></tr>${fo.map(card).join("")}</table></div></div>`;
+  h+=`<div class="card"><h3>⚠ 补差名单 · 本一线下10分临界生 ${cd.length} 人</h3>
+    <div style="overflow-x:auto"><table><tr><th>姓名</th><th>总分</th><th>班名</th><th>状态</th><th>薄弱</th><th>薄弱科</th></tr>${cd.map(card).join("")}</table></div></div>`;
+  return h;
+}
+
 /* ---------- 弱科补差 ---------- */
 let WK="all";
 function vWeak(){
@@ -293,7 +320,7 @@ function vWeak(){
   return h+"</div>";
 }
 
-/* ---------- 座位表 ---------- */
+/* ---------- 座位表（修复：讲台并入同网格 + 排号列 + 走道线） ---------- */
 function vSeat(){
   const st=DATA.seat;
   const cell=n=>{
@@ -304,10 +331,16 @@ function vSeat(){
     return `<div class="seat" style="background:${eC(s.e)};${focus?"border:3px solid var(--red);":""}" onclick="jumpStu('${s.n}')">
       <div class="nm">${s.n}</div><div class="wk">${(s.w||[]).map(x=>x[0]).join(" ")}</div>${focus?'<div class="zz">重</div>':""}</div>`;
   };
-  let h=`<div class="card">`;
-  h+=`<div class="podium-row">${st.front.map(n=>`<span class="front-p" style="background:${eC(byN(n)?.e||'x')}">${n}</span>`).join("")}<span class="podium">讲 台</span></div>`;
-  h+=`<div class="seat-grid">`;
-  st.rows.forEach(r=>{r.slice(1).forEach((n,i)=>{h+=`<div style="${(i===3||i===6)?'border-left:3px solid #334155;margin-left:-3px;':''}">${n?cell(n):'<div class="seat empty-s"></div>'}</div>`;});});
+  const aisle=i=>(i===4||i===7)?'border-left:4px solid #334155;':'';
+  let h=`<div class="card"><div class="seat-grid2">`;
+  h+=`<div class="seat-label" style="background:transparent;border:none"></div>`;
+  h+=`<div class="seat front-seat" style="background:${eC(byN(st.front[0])?.e||'x')};border:2px solid #94a3b8" onclick="jumpStu('${st.front[0]}')"><div class="nm">${st.front[0]}</div></div>`;
+  h+=`<div class="podium-span">讲 台</div>`;
+  h+=`<div class="seat front-seat" style="background:${eC(byN(st.front[1])?.e||'x')};border:2px solid #94a3b8" onclick="jumpStu('${st.front[1]}')"><div class="nm">${st.front[1]}</div></div>`;
+  st.rows.forEach(r=>{
+    h+=`<div class="seat-label">${r[0]}</div>`;
+    r.slice(1).forEach((n,i)=>{h+=`<div style="${aisle(i+1)}">${n?cell(n):'<div class="seat empty-s">空座</div>'}</div>`;});
+  });
   h+=`</div><div class="blackboard">— 黑 板（前）—</div>`;
   h+=`<div class="legend">${Object.keys(EDGE).map(k=>`<span><i style="background:${eC(k)}"></i>${EDGE[k]}</span>`).join("")}<span><b style="color:var(--red)">红框「重」</b>=≥2科弱</span><span>小字=薄弱科首字</span></div>`;
   return h+"</div><div class='empty' style='font-size:12px'>老师视角 · 第1排最前 · 点击座位查看学生档案</div>";
@@ -340,6 +373,122 @@ function vReport(){
     <p style="font-size:12px;color:var(--mut);text-indent:0">${r.tip}</p>
   </div>`;
 }
+
+/* ---------- 点名 ---------- */
+let ROLL_DATE=todayStr();
+const ST={到:{c:"#e8f5e9",t:"#2e7d32",s:"✓"},迟:{c:"#fff3e0",t:"#ef6c00",s:"△"},缺:{c:"#ffebee",t:"#c62828",s:"✗"},请:{c:"#e3f2fd",t:"#1565c0",s:"请"}};
+const ST_CYC=["到","迟","缺","请"];
+function vRoll(){
+  const ROLL=LS("g16_roll",{});const map=ROLL[ROLL_DATE]||{};
+  const seated=seatedSet();const unseated=stu().map(s=>s.n).filter(n=>!seated.has(n));
+  let cnt={到:0,迟:0,缺:0,请:0};stu().forEach(s=>{const stt=map[s.n]||"到";cnt[stt]++;});
+  const total=stu().length, present=cnt.到+cnt.迟;
+  const rate=total?Math.round(present/total*100):0;
+  const st=DATA.seat;
+  const aisle=i=>(i===4||i===7)?'border-left:4px solid #334155;':'';
+  function seatCell(n){
+    const stt=map[n]||"到",sx=ST[stt];
+    return `<div class="seat" style="background:${sx.c};border:2px solid ${stt==="到"?"#c8e6c9":"#888"};cursor:pointer" onclick="rollTap('${n}')">
+      <div class="nm" style="color:${sx.t}">${n}</div><div class="wk" style="font-weight:800;color:${sx.t}">${sx.s}</div></div>`;
+  }
+  let h=`<div class="card">
+    <div class="toolbar">
+      <input class="sel" type="date" id="rollDate" value="${ROLL_DATE}" onchange="ROLL_DATE=this.value;go('roll')">
+      <button class="sel" style="background:#fff;border:1.5px solid #e2e8f0;cursor:pointer" onclick="if(confirm('清空 ${ROLL_DATE} 当日点名？')){const R=LS('g16_roll',{});delete R['${ROLL_DATE}'];LSset('g16_roll',R);go('roll');}">重置当日</button>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 10px;font-size:13px">
+      <span style="color:var(--ok);font-weight:700">到 ${cnt.到}</span>
+      <span style="color:#ef6c00;font-weight:700">迟 ${cnt.迟}</span>
+      <span style="color:var(--red);font-weight:700">缺 ${cnt.缺}</span>
+      <span style="color:#1565c0;font-weight:700">请 ${cnt.请}</span>
+      <span style="margin-left:auto;font-weight:800">出勤率 ${rate}%</span>
+    </div>
+    <div class="note" style="margin-bottom:6px">默认全员「到」；点座位循环切换：到→迟→缺→请→到。</div>
+    <div class="seat-grid2">`;
+  h+=`<div class="seat-label" style="background:transparent;border:none"></div>`;
+  h+=`<div class="seat front-seat" style="background:${ST[map[st.front[0]]||"到"].c};border:2px solid ${(map[st.front[0]]||"到")==="到"?"#c8e6c9":"#888"};cursor:pointer" onclick="rollTap('${st.front[0]}')"><div class="nm" style="color:${ST[map[st.front[0]]||"到"].t}">${st.front[0]}</div><div class="wk" style="font-weight:800;color:${ST[map[st.front[0]]||"到"].t}">${ST[map[st.front[0]]||"到"].s}</div></div>`;
+  h+=`<div class="podium-span">讲 台</div>`;
+  h+=`<div class="seat front-seat" style="background:${ST[map[st.front[1]]||"到"].c};border:2px solid ${(map[st.front[1]]||"到")==="到"?"#c8e6c9":"#888"};cursor:pointer" onclick="rollTap('${st.front[1]}')"><div class="nm" style="color:${ST[map[st.front[1]]||"到"].t}">${st.front[1]}</div><div class="wk" style="font-weight:800;color:${ST[map[st.front[1]]||"到"].t}">${ST[map[st.front[1]]||"到"].s}</div></div>`;
+  st.rows.forEach(r=>{h+=`<div class="seat-label">${r[0]}</div>`;r.slice(1).forEach((n,i)=>{h+=`<div style="${aisle(i+1)}">${n?seatCell(n):'<div class="seat empty-s">空座</div>'}</div>`;});});
+  h+=`</div>`;
+  if(unseated.length){h+=`<div class="sec-title">未排座位名单（${unseated.length}人）</div><div style="display:flex;flex-wrap:wrap;gap:6px">`;unseated.forEach(n=>{const stt=map[n]||"到";h+=`<span class="chip" style="background:${ST[stt].c};border:2px solid ${stt==="到"?"#c8e6c9":"#888"};color:${ST[stt].t};cursor:pointer" onclick="rollTap('${n}')">${n} ${ST[stt].s}</span>`;});h+=`</div>`;}
+  h+=`<div class="toolbar" style="margin-top:10px"><button class="sel" onclick="hwExport()" style="background:#fff;border:1.5px solid #e2e8f0;cursor:pointer">⬇ 导出全部备份</button></div>`;
+  h+=`</div>`;
+  return h;
+}
+function rollTap(n){const R=LS("g16_roll",{});const m=R[ROLL_DATE]||{};const cur=m[n]||"到";m[n]=ST_CYC[(ST_CYC.indexOf(cur)+1)%ST_CYC.length];R[ROLL_DATE]=m;LSset("g16_roll",R);go("roll");}
+
+/* ---------- 作业统计 ---------- */
+function vHomework(){
+  let HW=LS("g16_hw",[]);
+  let h=`<div class="card"><h3>📝 作业登记与统计</h3>
+    <div class="toolbar">
+      <input class="sel" id="hwDate" type="date" value="${todayStr()}">
+      <select class="sel" id="hwSub">${["语文","数学","英语","物理","化学","地理","其他"].map(s=>`<option>${s}</option>`).join("")}</select>
+    </div>
+    <div class="toolbar">
+      <input class="sel" id="hwContent" placeholder="作业内容，如：练习册P35-37">
+      <button class="sel" style="background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff;border:none;font-weight:700;cursor:pointer" onclick="hwAdd()">+ 添加作业</button>
+    </div>
+    <div class="note">点作业卡片展开 / 收起，点学生姓名标记已交。数据仅存本设备浏览器。</div>
+  </div>`;
+  if(!HW.length) h+=`<div class="empty">暂无作业记录，先添加一条。</div>`;
+  HW.slice().reverse().forEach(it=>{
+    const done=new Set(it.done||[]);const total=stu().length, sub=done.size;
+    const exp=HW_EXP.has(it.id);
+    h+=`<div class="card" style="padding:12px">
+      <div onclick="HW_EXP.has(${it.id})?HW_EXP.delete(${it.id}):HW_EXP.add(${it.id});go('hw')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <div><b>${it.date}</b> · ${it.subject} · ${it.content||"(无内容)"}</div>
+        <div style="font-size:13px;color:${sub===total?'var(--ok)':'var(--c2)'};font-weight:800;white-space:nowrap">已交 ${sub}/${total} · ${total?Math.round(sub/total*100):0}%</div>
+      </div>`;
+    if(exp){
+      h+=`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px">`;
+      stu().forEach(s=>{const on=done.has(s.n);h+=`<span class="chip" style="background:${on?'#e8f5e9':'#fff'};border:1.5px solid ${on?'#43a047':'#e2e8f0'};color:${on?'#2e7d32':'var(--ink)'};cursor:pointer" onclick="event.stopPropagation();hwToggle(${it.id},'${s.n}')">${on?'✓ ':''}${s.n}</span>`;});
+      h+=`</div>`;
+      if(it.due) h+=`<div style="font-size:12px;color:var(--mut);margin-top:6px">截止：${it.due}</div>`;
+    }
+    h+=`<div style="margin-top:8px"><span style="font-size:12px;color:#ef5350;cursor:pointer" onclick="event.stopPropagation();hwDel(${it.id})">删除该作业</span></div></div>`;
+  });
+  if(HW.length){
+    const stat=stu().map(s=>{let j=0;HW.forEach(it=>(it.done||[]).includes(s.n)&&j++);return {n:s.n,j};}).sort((a,b)=>a.j-b.j);
+    h+=`<div class="card"><h3>📊 学生作业完成统计（应交 ${HW.length} 次）</h3><div style="overflow-x:auto"><table><tr><th>姓名</th><th>已交</th><th>未交</th><th>完成率</th></tr>`;
+    stat.forEach(x=>{const rate=Math.round(x.j/HW.length*100);h+=`<tr><td><b>${x.n}</b></td><td style="color:var(--ok)">${x.j}</td><td style="color:${x.j<HW.length?'var(--red)':'var(--mut)'}">${HW.length-x.j}</td><td>${rate}%</td></tr>`;});
+    h+=`</table></div></div>`;
+  }
+  h+=`<div class="toolbar" style="margin-top:6px"><button class="sel" onclick="hwExport()" style="background:#fff;border:1.5px solid #e2e8f0;cursor:pointer">⬇ 导出备份</button><label class="sel" style="background:#fff;border:1.5px solid #e2e8f0;cursor:pointer;text-align:center">⬆ 导入<input type="file" accept="application/json" style="display:none" onchange="hwImport(this)"></label></div>`;
+  return h;
+}
+function hwAdd(){const date=document.getElementById("hwDate").value||todayStr();const subject=document.getElementById("hwSub").value;const content=document.getElementById("hwContent").value.trim();if(!content){alert("请填写作业内容");return;}const HW=LS("g16_hw",[]);HW.push({id:Date.now(),date,subject,content,due:"",done:[]});LSset("g16_hw",HW);go("hw");}
+function hwToggle(id,name){const HW=LS("g16_hw",[]);const it=HW.find(x=>x.id===id);if(!it)return;it.done=it.done||[];const i=it.done.indexOf(name);if(i>=0)it.done.splice(i,1);else it.done.push(name);LSset("g16_hw",HW);go("hw");}
+function hwDel(id){if(!confirm("确定删除该作业记录？"))return;LSset("g16_hw",LS("g16_hw",[]).filter(x=>x.id!==id));go("hw");}
+function hwExport(){const d={hw:LS("g16_hw",[]),pt:LS("g16_pt",[]),roll:LS("g16_roll",{})};download("ban16_作业积分点名备份.json",JSON.stringify(d,null,2));}
+function hwImport(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(d.hw)LSset("g16_hw",d.hw);if(d.pt)LSset("g16_pt",d.pt);if(d.roll)LSset("g16_roll",d.roll);alert("导入成功");go(CUR);}catch(e){alert("导入失败：文件格式错误");}};r.readAsText(f);}
+
+/* ---------- 积分 ---------- */
+function vPoints(){
+  let PT=LS("g16_pt",[]);
+  const bal={};stu().forEach(s=>bal[s.n]=0);PT.forEach(e=>{if(bal[e.name]!=null)bal[e.name]+=e.delta;});
+  const board=Object.entries(bal).sort((a,b)=>b[1]-a[1]);
+  let h=`<div class="card"><h3>💯 班级积分</h3>
+    <div class="toolbar">
+      <select class="sel" id="ptName">${stu().map(s=>`<option>${s.n}</option>`).join("")}</select>
+      <input class="sel" id="ptDelta" type="number" placeholder="分值(+/-)" style="max-width:96px">
+      <input class="sel" id="ptReason" placeholder="事由，如：作业优秀">
+      <button class="sel" style="background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff;border:none;font-weight:700;cursor:pointer" onclick="ptAdd()">+ 记录</button>
+    </div></div>`;
+  h+=`<div class="card"><h3>🏅 积分排行榜</h3><div style="overflow-x:auto"><table><tr><th>#</th><th>姓名</th><th>积分</th></tr>`;
+  board.forEach(([n,v],i)=>{h+=`<tr><td>${i+1}</td><td><b>${n}</b></td><td style="font-weight:800;color:${v>0?'var(--ok)':v<0?'var(--red)':'var(--ink)'}">${v>0?'+':''}${v}</td></tr>`;});
+  h+=`</table></div></div>`;
+  h+=`<div class="card"><h3>🧾 最近记录</h3>`;
+  if(!PT.length)h+=`<div class="empty">暂无积分记录</div>`;
+  PT.slice().reverse().slice(0,30).forEach(e=>{h+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 2px;border-bottom:1px solid #f1f5f9"><div><b>${e.name}</b> <span style="color:var(--mut);font-size:12px">${e.reason||""}</span></div><div style="display:flex;gap:10px;align-items:center"><span style="font-weight:800;color:${e.delta>0?'var(--ok)':'var(--red)'}">${e.delta>0?'+':''}${e.delta}</span><span style="color:#ef5350;cursor:pointer;font-size:12px" onclick="ptDel(${e.id})">删</span></div></div>`;});
+  h+=`</div>`;
+  h+=`<div class="toolbar" style="margin-top:6px"><button class="sel" onclick="hwExport()" style="background:#fff;border:1.5px solid #e2e8f0;cursor:pointer">⬇ 导出备份</button><label class="sel" style="background:#fff;border:1.5px solid #e2e8f0;cursor:pointer;text-align:center">⬆ 导入<input type="file" accept="application/json" style="display:none" onchange="ptImport(this)"></label></div>`;
+  return h;
+}
+function ptAdd(){const name=document.getElementById("ptName").value;const delta=parseInt(document.getElementById("ptDelta").value,10);const reason=document.getElementById("ptReason").value.trim();if(!name||isNaN(delta)||delta===0){alert("请选择学生并填写非零分值");return;}const PT=LS("g16_pt",[]);PT.push({id:Date.now(),name,delta,reason});LSset("g16_pt",PT);go("pt");}
+function ptDel(id){LSset("g16_pt",LS("g16_pt",[]).filter(e=>e.id!==id));go("pt");}
+function ptImport(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(d.pt)LSset("g16_pt",d.pt);if(d.hw)LSset("g16_hw",d.hw);if(d.roll)LSset("g16_roll",d.roll);alert("导入成功");go(CUR);}catch(e){alert("导入失败");}};r.readAsText(f);}
 
 /* 自动解锁 */
 window.addEventListener("DOMContentLoaded",()=>{
