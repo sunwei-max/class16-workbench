@@ -10,7 +10,7 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
-  if (url.origin !== location.origin) return; // 仅缓存同源资源
+  if (url.origin !== location.origin) return;
   e.respondWith((async () => {
     try {
       const net = await fetch(e.request);
