@@ -464,16 +464,16 @@ const EDGE={y:"达本一",u:"本一线上10分",d:"本一线下10分",b:"达本�
 const EBG={y:"#a5d6a7",u:"#ffd54f",d:"#ff8a65",b:"#90caf9",n:"#cfd8dc",x:"#ffffff"};
 const EDGE_RANK={y:5,u:4,d:3,b:2,n:1,x:0};
 function edgeRank(e){return EDGE_RANK[e]||0;}
-const SUBS=["语文","数学","英语","物理","化学","地理","体育"];
-const SCOL={"语文":"#c00000","数学":"#0070c0","英语":"#2e7d32","物理":"#e65100","化学":"#6a1b9a","地理":"#00838f","体育":"#455a64"};
-const FULL={"语文":150,"数学":150,"英语":150,"物理":100,"化学":100,"地理":100};
+const SUBS=["语文","数学","英语","物理","化学","生物","体育"];
+const SCOL={"语文":"#c00000","数学":"#0070c0","英语":"#2e7d32","物理":"#e65100","化学":"#6a1b9a","生物":"#00838f","体育":"#455a64"};
+const FULL={"语文":150,"数学":150,"英语":150,"物理":100,"化学":100,"生物":100};
 const EX=()=>DATA.exams[CUR_EXAM];
 const stu=()=>EX().students;
 const byN=n=>stu().find(s=>s.n===n);
 const eC=s=>EBG[s]||"#fff";
 
 /* ---------- 跨考试聚合（各科折线图 / 导入派生 共用） ---------- */
-const SUBJ_SCORED=["语文","数学","英语","物理","化学","地理"];
+const SUBJ_SCORED=["语文","数学","英语","物理","化学","生物"];
 const EXAMS=()=>DATA.meta.examOrder;
 /* 考试短名：横轴/表头防重叠用（悬停 title 仍有全名） */
 const EXSHORT={"高二上期中":"上期中","高二上期末":"上期末","高二下期中":"下期中","高二下期末":"下期末","高三进班":"进班","高三第一次月测":"一月测","高三第二次月测":"二月测","高三期初联考":"期初","高三第三次监测":"三监测","第三次监测":"三监测"};
@@ -1327,7 +1327,7 @@ function vHomework(){
   let h=`<div class="card"><h3>📝 作业登记</h3>
     <div class="toolbar">
       <input class="sel" id="hwDate" type="date" value="${todayStr()}">
-      <select class="sel" id="hwSub">${["语文","数学","英语","物理","化学","地理","其他"].map(s=>`<option>${s}</option>`).join("")}</select>
+      <select class="sel" id="hwSub">${["语文","数学","英语","物理","化学","生物","其他"].map(s=>`<option>${s}</option>`).join("")}</select>
       <input class="sel" id="hwContent" placeholder="作业内容，如：练习册P35-37" style="flex:2;min-width:170px">
       <button class="sel" style="background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff;border:none;font-weight:700;cursor:pointer;min-height:46px" onclick="hwAdd()">＋ 添加作业</button>
     </div></div>`;
@@ -1880,11 +1880,11 @@ const TT_TIMES={
 /* 默认课表：泗洪一中高三(16)班 2026.9.1 启用（来自班主任下发的《高三8班班级课表》，含任课教师）。
    周六周日按高三自主学习填“自习”，老师可按实际手改。 */
 const TT_DEF={
-  "周一":{"早1":{subj:"语文",teacher:"陆蕊"},"早2":{subj:"英语",teacher:"钟新"},"第1节":{subj:"英语",teacher:"钟新"},"第2节":{subj:"语文",teacher:"陆蕊"},"第3节":{subj:"地理",teacher:"王馨珧"},"第4节":{subj:"物理",teacher:"孙威"},"午练":{subj:"物理",teacher:"孙威"},"第5节":{subj:"数学",teacher:"王子艳"},"第6节":{subj:"数学",teacher:"王子艳"},"第7节":{subj:"英语",teacher:"钟新"},"第8节":{subj:"化学",teacher:"蔡子恒"},"晚1":{subj:"英语",teacher:"钟新"},"晚2":{subj:"英语",teacher:"钟新"},"晚3":{subj:"语文",teacher:"陆蕊"},"晚4":{subj:"物理",teacher:"孙威"},"晚5":{subj:"化学",teacher:"蔡子恒"}},
-  "周二":{"早1":{subj:"英语",teacher:"钟新"},"早2":{subj:"语文",teacher:"陆蕊"},"第1节":{subj:"语文",teacher:"陆蕊"},"第2节":{subj:"物理",teacher:"孙威"},"第3节":{subj:"化学",teacher:"蔡子恒"},"第4节":{subj:"数学",teacher:"王子艳"},"午练":{subj:"化学",teacher:"陆蕊"},"第5节":{subj:"体育",teacher:"许一凡"},"第6节":{subj:"地理",teacher:"王馨珧"},"第7节":{subj:"数学",teacher:"王子艳"},"第8节":{subj:"英语",teacher:"钟新"},"晚1":{subj:"地理",teacher:"王馨珧"},"晚2":{subj:"物理",teacher:"孙威"},"晚3":{subj:"化学",teacher:"蔡子恒"},"晚4":{subj:"数学",teacher:"王子艳"},"晚5":{subj:"数学",teacher:"王子艳"}},
-  "周三":{"早1":{subj:"地理",teacher:"王馨珧"},"早2":{subj:"化学",teacher:"蔡子恒"},"第1节":{subj:"化学",teacher:"蔡子恒"},"第2节":{subj:"数学",teacher:"王子艳"},"第3节":{subj:"数学",teacher:"王子艳"},"第4节":{subj:"地理",teacher:"王馨珧"},"午练":{subj:"数学",teacher:"王子艳"},"第5节":{subj:"语文",teacher:"陆蕊"},"第6节":{subj:"语文",teacher:"陆蕊"},"第7节":{subj:"英语",teacher:"钟新"},"第8节":{subj:"物理",teacher:"孙威"},"晚1":{subj:"语文",teacher:"陆蕊"},"晚2":{subj:"英语",teacher:"钟新"},"晚3":{subj:"物理",teacher:"孙威"},"晚4":{subj:"地理",teacher:"王馨珧"},"晚5":{subj:"数学",teacher:"王子艳"}},
-  "周四":{"早1":{subj:"语文",teacher:"陆蕊"},"早2":{subj:"英语",teacher:"钟新"},"第1节":{subj:"英语",teacher:"钟新"},"第2节":{subj:"英语",teacher:"钟新"},"第3节":{subj:"物理",teacher:"孙威"},"第4节":{subj:"化学",teacher:"蔡子恒"},"午练":{subj:"地理",teacher:"王馨珧"},"第5节":{subj:"数学",teacher:"王子艳"},"第6节":{subj:"语文",teacher:"陆蕊"},"第7节":{subj:"地理",teacher:"王馨珧"},"第8节":{subj:"英语",teacher:"钟新"},"晚1":{subj:"数学",teacher:"王子艳"},"晚2":{subj:"数学",teacher:"王子艳"},"晚3":{subj:"数学",teacher:"王子艳"},"晚4":{subj:"地理",teacher:"王馨珧"},"晚5":{subj:"化学",teacher:"蔡子恒"}},
-  "周五":{"早1":{subj:"英语",teacher:"钟新"},"早2":{subj:"语文",teacher:"陆蕊"},"第1节":{subj:"英语",teacher:"钟新"},"第2节":{subj:"语文",teacher:"陆蕊"},"第3节":{subj:"数学",teacher:"王子艳"},"第4节":{subj:"地理",teacher:"王馨珧"},"午练":{subj:"数学",teacher:"王子艳"},"第5节":{subj:"体育",teacher:"许一凡"},"第6节":{subj:"化学",teacher:"蔡子恒"},"第7节":{subj:"物理",teacher:"孙威"},"第8节":{subj:"语文",teacher:"陆蕊"},"晚1":{subj:"语文",teacher:"陆蕊"},"晚2":{subj:"物理",teacher:"孙威"},"晚3":{subj:"化学",teacher:"蔡子恒"},"晚4":{subj:"物理",teacher:"孙威"},"晚5":{subj:"地理",teacher:"王馨珧"}}
+  "周一":{"早1":{subj:"语文",teacher:"陆蕊"},"早2":{subj:"英语",teacher:"钟新"},"第1节":{subj:"英语",teacher:"钟新"},"第2节":{subj:"语文",teacher:"陆蕊"},"第3节":{subj:"生物",teacher:"王馨珧"},"第4节":{subj:"物理",teacher:"孙威"},"午练":{subj:"物理",teacher:"孙威"},"第5节":{subj:"数学",teacher:"王子艳"},"第6节":{subj:"数学",teacher:"王子艳"},"第7节":{subj:"英语",teacher:"钟新"},"第8节":{subj:"化学",teacher:"蔡子恒"},"晚1":{subj:"英语",teacher:"钟新"},"晚2":{subj:"英语",teacher:"钟新"},"晚3":{subj:"语文",teacher:"陆蕊"},"晚4":{subj:"物理",teacher:"孙威"},"晚5":{subj:"化学",teacher:"蔡子恒"}},
+  "周二":{"早1":{subj:"英语",teacher:"钟新"},"早2":{subj:"语文",teacher:"陆蕊"},"第1节":{subj:"语文",teacher:"陆蕊"},"第2节":{subj:"物理",teacher:"孙威"},"第3节":{subj:"化学",teacher:"蔡子恒"},"第4节":{subj:"数学",teacher:"王子艳"},"午练":{subj:"化学",teacher:"陆蕊"},"第5节":{subj:"体育",teacher:"许一凡"},"第6节":{subj:"生物",teacher:"王馨珧"},"第7节":{subj:"数学",teacher:"王子艳"},"第8节":{subj:"英语",teacher:"钟新"},"晚1":{subj:"生物",teacher:"王馨珧"},"晚2":{subj:"物理",teacher:"孙威"},"晚3":{subj:"化学",teacher:"蔡子恒"},"晚4":{subj:"数学",teacher:"王子艳"},"晚5":{subj:"数学",teacher:"王子艳"}},
+  "周三":{"早1":{subj:"生物",teacher:"王馨珧"},"早2":{subj:"化学",teacher:"蔡子恒"},"第1节":{subj:"化学",teacher:"蔡子恒"},"第2节":{subj:"数学",teacher:"王子艳"},"第3节":{subj:"数学",teacher:"王子艳"},"第4节":{subj:"生物",teacher:"王馨珧"},"午练":{subj:"数学",teacher:"王子艳"},"第5节":{subj:"语文",teacher:"陆蕊"},"第6节":{subj:"语文",teacher:"陆蕊"},"第7节":{subj:"英语",teacher:"钟新"},"第8节":{subj:"物理",teacher:"孙威"},"晚1":{subj:"语文",teacher:"陆蕊"},"晚2":{subj:"英语",teacher:"钟新"},"晚3":{subj:"物理",teacher:"孙威"},"晚4":{subj:"生物",teacher:"王馨珧"},"晚5":{subj:"数学",teacher:"王子艳"}},
+  "周四":{"早1":{subj:"语文",teacher:"陆蕊"},"早2":{subj:"英语",teacher:"钟新"},"第1节":{subj:"英语",teacher:"钟新"},"第2节":{subj:"英语",teacher:"钟新"},"第3节":{subj:"物理",teacher:"孙威"},"第4节":{subj:"化学",teacher:"蔡子恒"},"午练":{subj:"生物",teacher:"王馨珧"},"第5节":{subj:"数学",teacher:"王子艳"},"第6节":{subj:"语文",teacher:"陆蕊"},"第7节":{subj:"生物",teacher:"王馨珧"},"第8节":{subj:"英语",teacher:"钟新"},"晚1":{subj:"数学",teacher:"王子艳"},"晚2":{subj:"数学",teacher:"王子艳"},"晚3":{subj:"数学",teacher:"王子艳"},"晚4":{subj:"生物",teacher:"王馨珧"},"晚5":{subj:"化学",teacher:"蔡子恒"}},
+  "周五":{"早1":{subj:"英语",teacher:"钟新"},"早2":{subj:"语文",teacher:"陆蕊"},"第1节":{subj:"英语",teacher:"钟新"},"第2节":{subj:"语文",teacher:"陆蕊"},"第3节":{subj:"数学",teacher:"王子艳"},"第4节":{subj:"生物",teacher:"王馨珧"},"午练":{subj:"数学",teacher:"王子艳"},"第5节":{subj:"体育",teacher:"许一凡"},"第6节":{subj:"化学",teacher:"蔡子恒"},"第7节":{subj:"物理",teacher:"孙威"},"第8节":{subj:"语文",teacher:"陆蕊"},"晚1":{subj:"语文",teacher:"陆蕊"},"晚2":{subj:"物理",teacher:"孙威"},"晚3":{subj:"化学",teacher:"蔡子恒"},"晚4":{subj:"物理",teacher:"孙威"},"晚5":{subj:"生物",teacher:"王馨珧"}}
 };
 (function(){const z={};TT_PERIODS.forEach(p=>z[p]={subj:"自习",teacher:""});["周六","周日"].forEach(d=>TT_DEF[d]=JSON.parse(JSON.stringify(z)));})();
 function ttDefault(){const grid={};
