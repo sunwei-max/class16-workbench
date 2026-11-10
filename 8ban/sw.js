@@ -1,5 +1,5 @@
 // 高三8班工作台 Service Worker —— 网络优先(绕过HTTP缓存) + 离线兜底
-const CACHE = 'g8-workbench-v1-7117aab3';
+const CACHE = 'g8-workbench-v1-4d9cc5ba';
 const ASSETS = ['./','./index.html','./manifest.json','./icon-192.png','./icon-512.png','./sw.js'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
