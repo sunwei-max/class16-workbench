@@ -1,5 +1,5 @@
 // 高三16班工作台 Service Worker —— 网络优先(绕过HTTP缓存) + 离线兜底
-const CACHE = 'g16-workbench-v1-b0845ee3';
+const CACHE = 'g16-workbench-v1-38da5b25';
 const ASSETS = ['./','./index.html','./manifest.json','./icon-192.png','./icon-512.png','./sw.js'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
