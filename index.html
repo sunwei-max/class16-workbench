@@ -1061,13 +1061,13 @@ tr.rowc:active{background:#eef2ff}
   <div class="card">
     <div class="stitle">📤 分享家长查询页</div>
     <div id="slPaneG">
-      <div class="sub">家长打开后<b>输入孩子姓名即自动锁定</b>，不能切换查询其他同学。<br>把链接发到家长群，或下载二维码图片张贴/转发。</div>
+      <div class="sub">家长打开后<b>输入孩子姓名即永久锁定</b>，不能切换查询其他同学。<br>复制链接发家长群，或下载海报图片发群/张贴。</div>
       <img class="qrimg" id="slQR" crossorigin="anonymous" alt="家长查询页二维码">
       <div class="qrerr" id="slQRErr">二维码需联网生成，请直接复制下方链接发送</div>
       <div class="linkbox" id="slLink"></div>
       <div class="acts">
         <button class="cp" onclick="shareLinkCopy()">📋 复制链接</button>
-        <button class="dl" onclick="shareLinkDownload()">⬇ 下载图片</button>
+        <button class="dl" onclick="shareLinkDownload()">⬇ 下载海报</button>
         <button class="op" onclick="shareLinkOpen()">🔗 打开预览</button>
       </div>
     </div>
@@ -1175,7 +1175,7 @@ try{const _imp=LS("g16_data",null);if(_imp&&_imp.exams&&_imp.meta&&_imp.meta.exa
   DATA=_imp;
   for(const k in _cfg){if(_cfg[k]!==undefined)DATA.meta[k]=_cfg[k];}
 }}catch(e){}
-const BUILD="6f2cfad2";
+const BUILD="adbf242f";
 const CLS="高三16班";                       /* 8班经 apply_class_tokens 自动改为 高三8班 */
 /* 云端后台配置（由 build_site.py 注入真实 url/anon/keys；enabled=false 或未配 url/anon 时完全回退本地逻辑，不影响现有功能） */
 const CLOUD={"enabled": true, "repo": "sunwei-max/class16-workbench-data", "branch": "main", "token": "~x000342690f074857335e0a5d2d19510e153b645c065241733e24615c245b020e3621000353095105", "obk": "gk26", "keys": {"seat16": "seat16", "seat8": "seat8", "sched": "sched", "tt8": "tt8", "tt16": "tt16"}};
@@ -1221,7 +1221,7 @@ const PARENT=!!(window.__PARENT__);
 /* ===== 家长通用链接：输入姓名即锁定本机，不能切换查他人 =====
    家长打开同一条通用链接，首次输入/点选孩子姓名后写入本机 localStorage（按班级前缀隔离）。
    锁定后 vProfile 不再渲染任何姓名输入框，go() 也把跳转拉回本人；刷新/重开仍保持绑定。
-   只有点「绑定有误」并二次确认才解除，防止顺手翻查其他同学。教师端不受影响。 */
+   页面内无任何解除入口——锁定了就是锁定了；只有清除浏览器数据或换设备才会重置。教师端不受影响。 */
 const _PB_KEY="g16_pbind";
 function allStudentNames(){return [...new Set(EXAMS().flatMap(e=>(DATA.exams[e]||{}).students||[]).map(s=>s.n))];}
 function parentBound(){
@@ -1233,14 +1233,6 @@ function parentBind(nm){
   if(!PARENT||!nm)return;
   try{LSset(_PB_KEY,nm);}catch(e){}
   LOCK_STU=nm; CUR_STU=nm;
-}
-function parentUnbind(){
-  try{LSset(_PB_KEY,"");}catch(e){}
-  LOCK_STU=null; CUR_STU=null;
-}
-function parentRebind(){
-  if(!confirm('确定解除本机绑定、重新输入学生姓名吗？\n（仅限首次输错姓名时使用）'))return;
-  parentUnbind(); go('pf');
 }
 let LOCK_STU=null;  /* 本机已绑定的学生；在 boot() 数据就绪后由 parentBound() 赋值 */
 /* 图例用内联 SVG 性别图标（与座位卡 .g-badge 同款绘制），避免 Unicode ♀/♂ 字形基线不同导致上浮/下沉 */
@@ -2635,31 +2627,47 @@ function shareLinkShow(){
 }
 function shareLinkClose(){document.getElementById('shareLinkMask').classList.remove('show');}
 function shareLinkOpen(){const url=document.getElementById('slLink').textContent;if(url)window.open(url,'_blank');}
-/* 下载查询二维码图片：优先取 600px 大图 blob，失败时用已加载的 img 走 canvas 兜底 */
+/* 下载查询海报：canvas 绘制标题/二维码/说明，输出 750×1180 PNG（无网络时用已加载的二维码兜底） */
 async function shareLinkDownload(){
   const url=document.getElementById('slLink').textContent;
   if(!url){toast('链接未生成');return;}
-  const api='https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=20&data='+encodeURIComponent(url);
-  const fname='高三16班家长查询二维码.png';
-  const save=blob=>{
-    if(!blob){toast('下载失败，请长按二维码图片保存');return;}
+  const api='https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=16&data='+encodeURIComponent(url);
+  const fname='高三16班家长查询海报.png';
+  const F='-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif';
+  const draw=qr=>{
+    const W=750,H=1180,c=document.createElement('canvas');c.width=W;c.height=H;
+    const x=c.getContext('2d');
+    const g=x.createLinearGradient(0,0,W,H);g.addColorStop(0,'#1e3a8a');g.addColorStop(.55,'#4338ca');g.addColorStop(1,'#7c3aed');
+    x.fillStyle=g;x.fillRect(0,0,W,H);
+    x.save();x.globalAlpha=.12;x.fillStyle='#fff';
+    x.beginPath();x.arc(70,110,190,0,Math.PI*2);x.fill();
+    x.beginPath();x.arc(700,1080,230,0,Math.PI*2);x.fill();x.restore();
+    x.textAlign='center';
+    x.fillStyle='#fff';x.font='800 46px '+F;x.fillText('高三16班 · 家长成绩查询',W/2,150);
+    x.globalAlpha=.88;x.font='400 24px '+F;x.fillText('输入孩子姓名，查看成绩 · 排名 · 学情',W/2,200);x.globalAlpha=1;
+    x.save();x.shadowColor='rgba(15,23,42,.28)';x.shadowBlur=28;x.shadowOffsetY=12;
+    x.fillStyle='#fff';rr(x,75,248,600,650,32);x.fill();x.restore();
+    x.fillStyle='#fff';x.fillRect(135,292,480,480);x.drawImage(qr,135,292,480,480);
+    x.fillStyle='#4338ca';x.font='700 25px '+F;x.fillText('首次查询即锁定本人成绩',W/2,825);
+    x.fillStyle='#64748b';x.font='400 20px '+F;x.fillText('不能切换查询其他同学 · 成绩请勿外传',W/2,866);
+    x.fillStyle='rgba(255,255,255,.94)';x.font='600 21px '+F;x.fillText('扫码或复制链接打开 · 高三16班班级工作台',W/2,1022);
+    x.globalAlpha=.72;x.font='400 16px '+F;x.fillText('数据以工作台最新发布为准',W/2,1060);x.globalAlpha=1;
+    return new Promise(res=>x.canvas.toBlob(res,'image/png'));
+  };
+  let qr;
+  try{
+    const r=await fetch(api,{mode:'cors'});if(!r.ok)throw 0;
+    const b=await r.blob();
+    qr=await (window.createImageBitmap?createImageBitmap(b):new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=URL.createObjectURL(b);}));
+  }catch(e){qr=document.getElementById('slQR');}
+  try{
+    const blob=await draw(qr);
+    if(!blob)throw 0;
     const a=document.createElement('a'),u=URL.createObjectURL(blob);
     a.href=u;a.download=fname;document.body.appendChild(a);a.click();
     setTimeout(()=>{URL.revokeObjectURL(u);a.remove();},1500);
-    toast('二维码图片已下载 ✅');
-  };
-  try{
-    const r=await fetch(api,{mode:'cors'});
-    if(!r.ok)throw new Error('http '+r.status);
-    save(await r.blob());
-  }catch(e){
-    try{
-      const img=document.getElementById('slQR');
-      const c=document.createElement('canvas');c.width=600;c.height=600;
-      const cx=c.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,600,600);cx.drawImage(img,0,0,600,600);
-      c.toBlob(save,'image/png');
-    }catch(e2){toast('下载失败，请长按二维码图片保存');}
-  }
+    toast('查询海报已下载 ✅');
+  }catch(e){toast('海报生成失败，请稍后重试');}
 }
 function shareLinkCopy(){
   const url=document.getElementById('slLink').textContent;
@@ -2765,8 +2773,7 @@ function vProfile(){
         <span style="font-size:16px">🔒</span> ${LOCK_STU} 的成绩查询
         <span style="margin-left:auto;font-size:11px;font-weight:600;color:#6366f1">本机已锁定</span>
       </div>
-      <div style="font-size:11.5px;color:#64748b;margin-top:5px">首次查询已绑定本机，不能切换查询其他同学；成绩信息请勿外传。</div>
-      <div style="text-align:right;margin-top:6px"><span style="font-size:11.5px;color:#94a3b8;cursor:pointer" onclick="parentRebind()">绑定有误？</span></div>
+      <div style="font-size:11.5px;color:#64748b;margin-top:5px">已永久锁定本机，不能切换查询其他同学；成绩信息请勿外传。</div>
     </div>`;
   }else{
     h=`<div class="card"><div class="toolbar"><input class="sel" list="stul" id="stuSel" placeholder="🔍 输入或选择学生姓名" value="${CUR_STU||""}" style="flex:1">
