@@ -1176,7 +1176,7 @@ try{const _imp=LS("g16_data",null);if(_imp&&_imp.exams&&_imp.meta&&_imp.meta.exa
   DATA=_imp;
   for(const k in _cfg){if(_cfg[k]!==undefined)DATA.meta[k]=_cfg[k];}
 }}catch(e){}
-const BUILD="adbf242f";
+const BUILD="d73ed2af";
 const CLS="高三16班";                       /* 8班经 apply_class_tokens 自动改为 高三8班 */
 /* 云端后台配置（由 build_site.py 注入真实 url/anon/keys；enabled=false 或未配 url/anon 时完全回退本地逻辑，不影响现有功能） */
 const CLOUD={"enabled": false};
@@ -1438,6 +1438,17 @@ function drawLineChart(cv,o){
     if(s.fill){c.beginPath();let st=false;d.forEach((v,i)=>{if(v==null){st=false;return;}const xx=xf(i),yy=yf(v);if(!st){c.moveTo(xx,yy);st=true;}else c.lineTo(xx,yy);});if(st){c.lineTo(xf(d.length-1),yf(ymin));c.lineTo(xf(0),yf(ymin));c.closePath();c.fillStyle=s.fill;c.fill();}}
     c.strokeStyle=s.color;c.lineWidth=2.4;c.lineJoin="round";c.beginPath();let st=false;d.forEach((v,i)=>{if(v==null){st=false;return;}const xx=xf(i),yy=yf(v);if(!st){c.moveTo(xx,yy);st=true;}else c.lineTo(xx,yy);});c.stroke();
     d.forEach((v,i)=>{if(v==null)return;c.fillStyle=s.color;c.beginPath();c.arc(xf(i),yf(v),3.2,0,7);c.fill();c.lineWidth=2;c.strokeStyle="#fff";c.stroke();});
+    /* 点旁数字（showVal 开关，仅一生一档两个排名图开启）：相邻点上下交错避让，靠边自动翻面，白描边保证压线也清晰 */
+    if(o.showVal){
+      c.font="700 9.5px -apple-system,sans-serif";c.textAlign="center";
+      d.forEach((v,i)=>{if(v==null)return;const xx=xf(i),yy=yf(v);
+        let up=i%2===0;if(yy-pad.t<17)up=false;if(H-pad.b-yy<17)up=true;
+        c.textBaseline=up?"bottom":"top";const ty=up?yy-7:yy+7,txt=String(v);
+        const tx=i===0?xx+8:(i===d.length-1?xx-8:xx);  /* 首尾点让开纵轴刻度与画布边缘 */
+        c.lineWidth=3;c.strokeStyle="rgba(255,255,255,.95)";c.strokeText(txt,tx,ty);
+        c.fillStyle="#334155";c.fillText(txt,tx,ty);
+      });
+    }
   });
 }
 function drawBarChart(cv,o){
@@ -2827,14 +2838,14 @@ function vProfile(){
   if(zrk.some(v=>v!=null)){
     h+=`<div class="panel"><div class="panel-h"><span>${s.n} · 班内排名走势</span><span class="panel-tag">线越高=名次越前（进步↑）</span></div>
       <div>${scCv("cvRank",172)}</div>${chartLegend([{name:"班内排名",color:"#c00000"}])}
-      <div class="note" style="margin-top:2px">折线为该生<b>班级名次</b>（数字越小越好）：<b>名次 1 在最上方</b>，线往<b>上</b>走=名次提升（进步）👍。</div></div>`;
-    chartDraw("cvRank",{labels:EXAMS(),invertY:true,series:[{name:"班内排名",color:"#c00000",data:zrk}]},drawLineChart);
+      <div class="note" style="margin-top:2px">折线为该生<b>班级名次</b>（数字越小越好），<b>点旁数字=当次班内名次</b>：<b>名次 1 在最上方</b>，线往<b>上</b>走=名次提升（进步）👍。</div></div>`;
+    chartDraw("cvRank",{labels:EXAMS(),invertY:true,showVal:true,series:[{name:"班内排名",color:"#c00000",data:zrk}]},drawLineChart);
   }
   if(zgl.some(v=>v!=null)){
     h+=`<div class="panel"><div class="panel-h"><span>${s.n} · 年级排名走势（理科名次）</span><span class="panel-tag">线越高=位次越前（进步↑）</span></div>
       <div>${scCv("cvGrade",172)}</div>${chartLegend([{name:"年级排名",color:"#1e3a8a"}])}
-      <div class="note" style="margin-top:2px">年级为<b>理科名次</b>（数百名量级），<b>名次 1 在最上方</b>：线往<b>上</b>走=年级位次前移。</div></div>`;
-    chartDraw("cvGrade",{labels:EXAMS(),invertY:true,series:[{name:"年级排名",color:"#1e3a8a",data:zgl}]},drawLineChart);
+      <div class="note" style="margin-top:2px">年级为<b>理科名次</b>（数百名量级），<b>点旁数字=当次年级名次</b>，<b>名次 1 在最上方</b>：线往<b>上</b>走=年级位次前移。</div></div>`;
+    chartDraw("cvGrade",{labels:EXAMS(),invertY:true,showVal:true,series:[{name:"年级排名",color:"#1e3a8a",data:zgl}]},drawLineChart);
   }
   h+=`<div class="card"><h3>各科成绩（对比班级均分）</h3>`;
   SUBJ_SCORED.forEach(sub=>{
