@@ -799,7 +799,7 @@ body.parent .pf-tag.teacher-only{display:none}
   --sh-card:0 1px 2px rgba(15,23,42,.04),0 10px 26px -18px rgba(30,58,138,.22);
   --sh-pop:0 18px 52px -14px rgba(15,23,42,.30);
   --surf-2:#f8fafc;--surf-3:#f1f5f9;
-  --sidebar-w:236px;
+  --sidebar-w:160px;
 }
 /* 统一过渡与缓动 */
 .card,.panel,.bigbtn,.chip,.lb,.quick a,.todo-item,.chat-item,.hw-chip,.seat,.we-day,.py-card,a,button,.toolbar button,.seat-toolbar button,.tt-cell,.subj-chips .sc{
@@ -876,13 +876,13 @@ body.parent .pf-tag.teacher-only{display:none}
     background:#fff;border-top:none;border-right:1px solid #e8edf3;
     backdrop-filter:none;-webkit-backdrop-filter:none;
     box-shadow:4px 0 22px -12px rgba(15,23,42,.14);
-    padding:0 12px 20px;z-index:60}
-  #tabbar::before{content:"班级工作台";display:flex;align-items:center;gap:9px;
-    font-size:15px;font-weight:900;color:#fff;letter-spacing:.4px;
-    margin:0 -12px 10px;padding:20px 18px;background:linear-gradient(135deg,var(--c1),var(--c2))}
-  #tabbar button{flex-direction:row;justify-content:flex-start;gap:13px;
-    padding:12px 15px;border-radius:13px;font-size:15px;font-weight:700;color:#475569;line-height:1.2}
-  #tabbar button .ic{font-size:22px}
+    padding:0 10px 16px;z-index:60}
+  #tabbar::before{content:"班级工作台";display:flex;align-items:center;gap:8px;
+    font-size:14px;font-weight:900;color:#fff;letter-spacing:.2px;
+    margin:0 -10px 8px;padding:18px 14px;background:linear-gradient(135deg,var(--c1),var(--c2))}
+  #tabbar button{flex:none;flex-direction:row;justify-content:flex-start;gap:10px;
+    padding:10px 12px;border-radius:11px;font-size:14px;font-weight:700;color:#475569;line-height:1.2}
+  #tabbar button .ic{font-size:20px}
   #tabbar button.on{color:var(--c1);background:linear-gradient(135deg,rgba(30,58,138,.11),rgba(109,40,217,.11));font-weight:800;box-shadow:inset 3px 0 0 var(--c1)}
   #tabbar button:not(.on):hover{background:var(--surf-3);color:#1e293b}
   #tabbar button.on .ic{filter:drop-shadow(0 2px 4px rgba(30,58,138,.3))}
@@ -1175,7 +1175,7 @@ try{const _imp=LS("g8_data",null);if(_imp&&_imp.exams&&_imp.meta&&_imp.meta.exam
   DATA=_imp;
   for(const k in _cfg){if(_cfg[k]!==undefined)DATA.meta[k]=_cfg[k];}
 }}catch(e){}
-const BUILD="f161a9d1";
+const BUILD="4b2fdfd8";
 const CLS="高三8班";                       /* 8班经 apply_class_tokens 自动改为 高三8班 */
 /* 云端后台配置（由 build_site.py 注入真实 url/anon/keys；enabled=false 或未配 url/anon 时完全回退本地逻辑，不影响现有功能） */
 const CLOUD={"enabled": true, "repo": "sunwei-max/class16-workbench-data", "branch": "main", "token": "~x000342690f074857335e0a5d2d19510e153b645c065241733e24615c245b020e3621000353095105", "obk": "gk26", "keys": {"seat16": "seat16", "seat8": "seat8", "sched": "sched", "tt8": "tt8", "tt16": "tt16"}};
