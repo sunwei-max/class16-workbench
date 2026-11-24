@@ -914,6 +914,16 @@ tr.rowc:active{background:#eef2ff}
   /* 更大字号与行高（桌面阅读） */
   body{font-size:15px}
   .card h3{font-size:16px}
+  /* 课表桌面宽屏：表格铺开、格子自适应放大、字号提升（手机/导出不受影响） */
+  .tt-wrap{padding-right:6px}
+  .tt-grid{width:100%;max-width:1180px;margin:0 auto;table-layout:fixed}
+  .tt-grid th{font-size:13.5px;padding:9px 4px}
+  .tt-grid .pr,.tt-grid.narrow .pr{width:78px;min-width:78px;font-size:12.5px;padding:7px 9px}
+  .tt-grid .pr small{font-size:10px}
+  .tt-grid .tt-cell,.tt-grid.narrow .tt-cell{width:auto;min-height:56px;font-size:14px;padding:8px 3px}
+  .tt-grid .tt-cell .tch,.tt-grid.narrow .tt-cell .tch{font-size:11px;margin-top:3px}
+  .tt-grid.narrow .tt-cell .swap-note{font-size:10px;padding:2px 5px}
+  .tt-grid .tt-cell.empty{font-size:14px}
 }
 /* 中屏（平板横屏）轻微加宽，仍是单栏 */
 @media (min-width:768px) and (max-width:1023px){
@@ -1175,7 +1185,7 @@ try{const _imp=LS("g8_data",null);if(_imp&&_imp.exams&&_imp.meta&&_imp.meta.exam
   DATA=_imp;
   for(const k in _cfg){if(_cfg[k]!==undefined)DATA.meta[k]=_cfg[k];}
 }}catch(e){}
-const BUILD="4b2fdfd8";
+const BUILD="8e5c19e7";
 const CLS="高三8班";                       /* 8班经 apply_class_tokens 自动改为 高三8班 */
 /* 云端后台配置（由 build_site.py 注入真实 url/anon/keys；enabled=false 或未配 url/anon 时完全回退本地逻辑，不影响现有功能） */
 const CLOUD={"enabled": true, "repo": "sunwei-max/class16-workbench-data", "branch": "main", "token": "~x000342690f074857335e0a5d2d19510e153b645c065241733e24615c245b020e3621000353095105", "obk": "gk26", "keys": {"seat16": "seat16", "seat8": "seat8", "sched": "sched", "tt8": "tt8", "tt16": "tt16"}};
