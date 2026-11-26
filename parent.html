@@ -1016,6 +1016,17 @@ tr.rowc:active{background:#eef2ff}
 .modal-bar .m-btn{color:#e6e6e6;background:#1c2029;border:1px solid #2a2f3a;border-radius:8px;padding:6px 11px;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
 .modal-bar .m-btn:active{transform:scale(.96)}
 @media(hover:hover){.modal-bar .m-btn:hover{background:#2a2f3a;border-color:#3a4150;transform:translateY(-1px)}}
+/* 性别批量补录弹层 */
+.gender-edit{flex:1;min-height:0;overflow:auto;background:#f8fafc;padding:14px 16px 40px}
+.gender-edit .note{display:block;margin-bottom:12px}
+.gender-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:9px}
+.gender-item{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e8edf3;border-radius:12px;padding:9px 10px}
+.gender-item.done{border-color:#c7d2fe;background:#f5f7ff}
+.gender-item .gn{flex:1;font-weight:800;font-size:14px;color:#1f2937;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gender-item .gbtn{border:1.5px solid #e2e8f0;background:#fff;border-radius:8px;padding:6px 10px;font-size:13px;font-weight:800;cursor:pointer;color:#475569}
+.gender-item .gbtn.f.on{background:#db2777;border-color:#db2777;color:#fff}
+.gender-item .gbtn.m.on{background:#1d4ed8;border-color:#1d4ed8;color:#fff}
+.gender-empty{grid-column:1/-1;text-align:center;color:#16a34a;font-weight:800;font-size:15px;padding:30px 0}
 .news-wrap{position:relative;flex:1;min-height:0;background:#0f1115}
 .news-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#0f1115}
 .news-loading{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#0f1115;transition:opacity .35s ease}
@@ -1123,6 +1134,18 @@ tr.rowc:active{background:#eef2ff}
   </div>
 </div>
 
+<!-- 性别批量补录：数据源无性别字段，按姓名推断有未知(?)，老师在此一次性点选补全，纠正存云同步座位数据 -->
+<div id="genderModal" class="modal">
+  <div class="modal-bar">
+    <span class="m-t">⚥ 补全性别 · 姓名推断不了的学生</span>
+    <button class="m-btn" onclick="closeGenderModal()">✕ 关闭</button>
+  </div>
+  <div class="gender-edit">
+    <div class="note">这些学生按姓名推断不出性别，直接点 <b>♀ 女</b> / <b>♂ 男</b> 补全，排座「女前男后」会更精准。结果自动存本机，点座位表「☁ 发布到云端」即全班一致。</div>
+    <div id="genderList" class="gender-list"></div>
+  </div>
+</div>
+
 <!-- 新闻日报 工作台内播放弹层（视频：加载态 + 失败兜底 + 刷新） -->
 <div id="newsModal" class="modal">
   <div class="modal-bar">
@@ -1202,7 +1225,7 @@ try{const _imp=LS("g16_data",null);if(_imp&&_imp.exams&&_imp.meta&&_imp.meta.exa
   DATA=_imp;
   for(const k in _cfg){if(_cfg[k]!==undefined)DATA.meta[k]=_cfg[k];}
 }}catch(e){}
-const BUILD="7dde4064";
+const BUILD="7d9deffd";
 const CLS="高三16班";                       /* 8班经 apply_class_tokens 自动改为 高三8班 */
 /* 云端后台配置（由 build_site.py 注入真实 url/anon/keys；enabled=false 或未配 url/anon 时完全回退本地逻辑，不影响现有功能） */
 const CLOUD={"enabled": false};
@@ -1243,6 +1266,40 @@ function seatFlipGender(nm){
   const cur=genderOf(nm), nx=cur==="m"?"f":"m";           /* ? → 默认先判女，再可反复切换 */
   seatGenderMap(true)[nm]=nx;
   toast((nx==="f"?"♀ 女生":"♂ 男生")+"："+nm+(cur==="?"?"（原未知）":"")); refresh();
+}
+/* ---- 性别批量补录：一次列出所有推断不出性别的学生，老师点选补全 ---- */
+function unknownGenders(){
+  const all=[...new Set(EXAMS().flatMap(e=>(DATA.exams[e]||{}).students||[]).map(s=>s.n))];
+  return all.filter(n=>genderOf(n)==="?");
+}
+function openGenderModal(){
+  if(PARENT)return;
+  document.getElementById("genderModal").classList.add("show");
+  renderGenderList();
+}
+function closeGenderModal(){document.getElementById("genderModal").classList.remove("show");}
+function renderGenderList(){
+  const box=document.getElementById("genderList");if(!box)return;
+  const list=unknownGenders();
+  if(!list.length){box.innerHTML='<div class="gender-empty">🎉 全部学生的性别都已确定，无需补录</div>';return;}
+  box.innerHTML=list.map(n=>`<div class="gender-item" data-n="${esc(n)}">
+    <span class="gn">${esc(n)}</span>
+    <button class="gbtn f" onclick="setGender('${esc(n)}','f')">♀ 女</button>
+    <button class="gbtn m" onclick="setGender('${esc(n)}','m')">♂ 男</button></div>`).join("");
+}
+function setGender(nm,g){
+  if(PARENT)return;
+  seatGenderMap(true)[nm]=g;                  /* 存入云同步座位数据，saveSeatToLS 已在 seatGenderMap(ensure=true) 内调用 */
+  const item=[...document.querySelectorAll('.gender-item')].find(x=>x.dataset.n===nm);
+  if(item){item.classList.add("done");item.querySelector('.gbtn.f').classList.toggle("on",g==="f");item.querySelector('.gbtn.m').classList.toggle("on",g==="m");}
+  updateGenderBtn();
+  /* 不整页 refresh，避免打断；座位表下次渲染/排座自动用新性别 */
+}
+function updateGenderBtn(){
+  const b=document.getElementById("gBtnSeat");if(!b)return;
+  const n=unknownGenders().length;
+  b.textContent=n?`⚥ 补全性别(${n})`:"⚥ 性别已全";
+  b.classList.toggle("ghost",n>0);
 }
 const PARENT=true;
 /* ===== 家长通用链接：输入姓名即锁定本机，不能切换查他人 =====
@@ -3588,6 +3645,8 @@ function vSeat(){
     h+=`<div class="seat-toolbar">`;
     h+=`<button class="primary" onclick="aiArrangeSeats()">🤖 AI智能排座</button>`;
     h+=`<button class="${editMode?'on':''}" onclick="seatToggleEdit()">${editMode?'✅ 完成调整':'✏️ 手动调整'}</button>`;
+    const _ug=unknownGenders().length;
+    h+=`<button id="gBtnSeat" class="${_ug?'ghost':''}" onclick="openGenderModal()">${_ug?`⚥ 补全性别(${_ug})`:'⚥ 性别已全'}</button>`;
     h+=`<button class="${SEAT_MIRROR?'on':''}" onclick="seatToggleMirror()">🔄 学生视角${SEAT_MIRROR?' ✓':''}</button>`;
     h+=`<button onclick="seatExportPDF()">📄 导出PDF</button>`;
     h+=`<button class="ghost" onclick="resetSeat()">↺ 恢复初始</button>`;
