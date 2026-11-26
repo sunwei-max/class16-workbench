@@ -489,10 +489,10 @@ body.view-sc .hs-table thead .hs-rk,body.view-sc .hs-table thead .hs-name{z-inde
 .tt-grid .pr small{display:block;font-weight:600;color:#9aa7b8;font-size:9px;margin-top:1px}
 .tt-nowline{position:absolute;left:0;height:0;border-top:2.5px solid #ef4444;z-index:6;pointer-events:none;display:none;box-shadow:0 0 6px rgba(239,68,68,.6)}
 .tt-nowline span{position:absolute;left:2px;top:-10px;background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;white-space:nowrap}
-/* 7天窄列模式：整周一屏放下，无需横向滚动 */
-.tt-grid.narrow .tt-cell{width:43px;font-size:11px;padding:4px 2px}
+/* 7天窄列模式：整周一屏放下，无需横向滚动（收紧列宽至40px，390px 手机视口完整放下、消除横滑卡顿） */
+.tt-grid.narrow .tt-cell{width:38px;font-size:11px;padding:4px 0}
 .tt-grid.narrow .tch{font-size:8px}
-.tt-grid.narrow .pr{min-width:44px;font-size:10.5px;padding:5px 5px}
+.tt-grid.narrow .pr{min-width:36px;font-size:10.5px;padding:5px 3px}
 .tt-cell.sel{box-shadow:0 0 0 3px var(--c1);outline:2.5px dashed var(--c1);outline-offset:-2px;transform:scale(1.04)}
 .tt-cell.tla,.tt-cell.tlb{box-shadow:0 0 0 4px #ef4444;outline:2px solid #ef4444;outline-offset:-2px;z-index:2}
 /* 对调（永久互换）标记：紫色描边 + 角标，一眼看出两节互换 */
@@ -839,6 +839,8 @@ body.parent .pf-tag.teacher-only{display:none}
   #main[data-view="tt"],#main[data-view="we"]{padding-bottom:max(38px,calc(var(--tabh,70px) - 2px))}
   /* 学科得分率走势：窄屏强制单列（覆盖构建时 cols:2 内联），避免小图挤成一团 */
   .sj-trend{grid-template-columns:1fr!important}
+  /* 手机课表：右 padding 40→6 给表格让位（toTop 仅在滚屏0.8屏后出现，课表页通常不滚），窄列 334px < 可用 378px，整周一屏放下、无需横滑 */
+  .tt-wrap{padding-right:6px}
 }
 /* 触摸反馈统一（仅触摸设备） */
 @media (hover:none){
@@ -1225,7 +1227,7 @@ try{const _imp=LS("g8_data",null);if(_imp&&_imp.exams&&_imp.meta&&_imp.meta.exam
   DATA=_imp;
   for(const k in _cfg){if(_cfg[k]!==undefined)DATA.meta[k]=_cfg[k];}
 }}catch(e){}
-const BUILD="4b783cc7";
+const BUILD="41d81ab7";
 const CLS="高三8班";                       /* 8班经 apply_class_tokens 自动改为 高三8班 */
 /* 云端后台配置（由 build_site.py 注入真实 url/anon/keys；enabled=false 或未配 url/anon 时完全回退本地逻辑，不影响现有功能） */
 const CLOUD={"enabled": false};
@@ -1234,7 +1236,9 @@ let SCHED_WORK=null;                          /* 作息表云端覆盖（优先�
 const EXT_APP_URL="https://aaa3364b1255991c1.app.workbuddy.host/?sharecode=F5L36PAPSJ";
 const EXT_APP_NAME="网课考勤";
 let SEAT_MODE="view", SEAT_SEL=null, SEAT_WORK=null;   /* view=浏览 edit=手动调整；SEAT_WORK=工作版座位 */
-const _seatKey="g8_seat_"+BUILD;          /* localStorage 键（8班自动变 g8_seat_）；按 BUILD 版本化 */
+const _seatKey="g8_seat";                 /* localStorage 键（8班自动变 g8_seat）；去掉 BUILD 版本化——否则每次发版新 BUILD 都会让本地已发布座位失效、退回内置初始并被自动发布覆盖 */
+/* 一次性迁移：旧版 g8_seat_<BUILD> 键里的座位迁入固定键，避免老用户升级后丢失已排座位 */
+try{ if(!LS("g8_seat",null)){ for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i); if(k&&/^g8_seat_[A-Za-z0-9]+$/.test(k)){const o=LS(k,null); if(o&&o.rows&&o.front){LSset("g8_seat",o);break;} } } } }catch(e){}
 const BZ=()=>(DATA.meta&&DATA.meta.boarders)||[];   /* 住校生名单（8班为空 → 不显示开关） */
 let SEAT_BZ=false; try{SEAT_BZ=!!LS("g8_seat_bz",false);}catch(e){}  /* 住校生标记开关：偏好跨BUILD保留 */
 let SEAT_MIRROR=false; try{SEAT_MIRROR=!!LS("g8_seat_mirror",false);}catch(e){}  /* 学生视角（讲台翻到上方）开关：偏好跨BUILD保留 */
@@ -2103,8 +2107,9 @@ function go(t){
 function bindDragScroll(el){
   if(!el||el.dataset.dragBound)return; el.dataset.dragBound="1";
   let down=false,sx=0,sy=0,sl=0,horiz=false;
-  let raf=0,target=0,lastX=0,lastT=0,vel=0,glideId=0;
-  const apply=()=>{ raf=0; if(down) el.scrollLeft=target; };
+  let target=0,lastX=0,lastT=0,vel=0,glideId=0;
+  /* 直接同步赋值，取消 rAF 合批的一帧延迟——短距离横滑(如手机课表仅77px)时跟手顺滑，避免"拖泥带水" */
+  const apply=()=>{ if(down) el.scrollLeft=target; };
   /* 轻量惯性：松手后按末速度衰减滚动，提升手感；速度足够小则停止 */
   const glide=()=>{
     glideId=0;
@@ -2115,7 +2120,6 @@ function bindDragScroll(el){
   };
   /* 触屏与鼠标/触控笔共用一套拖拽逻辑：start/move/end 只认坐标与时间 */
   const start=(x,y,ts)=>{
-    if(raf)cancelAnimationFrame(raf),raf=0;
     if(glideId)cancelAnimationFrame(glideId),glideId=0;
     down=true;horiz=false;sx=x;sy=y;sl=el.scrollLeft;
     target=sl;lastX=x;lastT=ts;vel=0;
@@ -2131,7 +2135,7 @@ function bindDragScroll(el){
       const dt=ts-lastT;
       if(dt>0) vel=(x-lastX)/dt;              /* px/ms，用于松手惯性 */
       lastX=x; lastT=ts;
-      if(!raf)raf=requestAnimationFrame(apply);/* rAF 合批，避免一帧多次重排 */
+      apply();                                /* 同步跟手 */
     }
   };
   const end=()=>{
@@ -3566,8 +3570,21 @@ function seatPU(e,pos){
   _seatLP=null;
 }
 function seatPC(pos){ if(_seatLP&&_seatLP.pos===pos){clearTimeout(_seatLP.t);_seatLP=null;} }
-function resetSeat(){
+async function resetSeat(){
   const gmap=(SEAT_WORK&&SEAT_WORK.gender)?SEAT_WORK.gender:null;   /* 性别纠正按学生记录，恢复座位布局时保留 */
+  /* 发布到云端后云端即最新权威：先尝试拉云端已发布版本恢复，绝不把内置初始推上云端覆盖最新 */
+  const key=cloudSeatKey();
+  if(key&&cloudBase()){
+    try{
+      const v=await cloudGet(key);
+      if(v&&v.rows&&v.front){
+        SEAT_WORK=v; if(gmap){ if(!SEAT_WORK.gender)SEAT_WORK.gender={}; Object.assign(SEAT_WORK.gender,gmap); }
+        SEAT_SEL=null; SEAT_MODE="view"; saveSeatToLS(); _syncMeta(key,v); refresh();
+        toast("↺ 已恢复到云端已发布的最新座位"); return;
+      }
+    }catch(e){}
+  }
+  /* 云端无已发布版本（确实没发布过）才回退内置初始 */
   SEAT_WORK=cloneSeat(DATA.seat);                                  /* 恢复初始座位布局（含 rows/front） */
   if(gmap) SEAT_WORK.gender=gmap;                                  /* 保留此前手动纠正的性别，避免退回按姓名猜测而显示「?」 */
   SEAT_SEL=null; SEAT_MODE="view"; saveSeatToLS();
@@ -4958,9 +4975,10 @@ function ttDefault(){const grid={};
   Object.entries(TT_DEF).forEach(([d,ps])=>Object.entries(ps).forEach(([p,c])=>{grid[d][p]={subj:c.subj,teacher:c.teacher||""};}));
   return {days:TT_DAYS.slice(0),periods:TT_PERIODS,grid};}
 function getTT(){let t=LS("g8_tt",null);
-  /* 新BUILD发布后以注入课表为准自动刷新（修复旧缓存缺晚自习等问题）；同BUILD内手工编辑保留 */
-  if(DATA.meta&&DATA.meta.tt&&LS("g8_tt_b")!==BUILD){t=DATA.meta.tt;LSset("g8_tt",t);LSset("g8_tt_b",BUILD);return t;}
-  if(!t){const d=DATA.meta.tt||ttDefault();LSset("g8_tt",d);LSset("g8_tt_b",BUILD);return d;} /* 默认课表优先用注入的 meta.tt（如8班从年级课表提取），缺省回退写死的8班课表 */
+  /* 发布到云端后云端即最新权威：本地已有完整课表时不再因发版(BUILD变化)用内置注入值覆盖，避免已发布/已改课表被打回内置初始。
+     仅在【本地无课表】或【课表节次结构落后于新版】时才用注入课表刷新（保留旧缓存缺晚自习的升级兜底）。 */
+  if(!t){const d=DATA.meta.tt||ttDefault();LSset("g8_tt",d);LSset("g8_tt_b",BUILD);return d;} /* 首次/默认课表优先用注入的 meta.tt，缺省回退写死的8班课表 */
+  LSset("g8_tt_b",BUILD);   /* 仅登记已同步到本 BUILD，供其它逻辑读取；不再触发覆盖 */
   if(t&&t.grid&&t.periods&&t.days&&t.days.length){
     if(t.periods.length!==TT_PERIODS.length){const d=ttDefault();LSset("g8_tt",d);return d;} /* 节次结构升级，自动刷新为最新课表 */
     let ch=false; /* 迁移：补齐缺失天（如周六周日）与缺失节次 */
