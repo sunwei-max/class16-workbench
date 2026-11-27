@@ -1069,7 +1069,6 @@ tr.rowc:active{background:#eef2ff}
 .hp-seat{display:grid;grid-template-columns:34px repeat(9,minmax(34px,1fr));gap:3px;min-width:340px}
 .hp-seat .hpc{border-radius:5px;padding:4px 1px;text-align:center;font-size:10px;font-weight:700;color:#1f2937;line-height:1.15;overflow:hidden;word-break:break-all}
 .hp-seat .hpl{background:#334155;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;border-radius:5px}
-.hp-seat .hpf{background:#fef3c7;color:#92400e;font-size:9px}
 .hp-seat .hpe{background:#f8fafc;color:#cbd5e1;border:1px dashed #e2e8f0}
 .hp-g{font-size:8px;margin-left:1px}
 .hp-tt{border-collapse:separate;border-spacing:1px;min-width:500px;font-size:10px}
@@ -1299,7 +1298,7 @@ try{const _imp=LS("g16_data",null);if(_imp&&_imp.exams&&_imp.meta&&_imp.meta.exa
   DATA=_imp;
   for(const k in _cfg){if(_cfg[k]!==undefined)DATA.meta[k]=_cfg[k];}
 }}catch(e){}
-const BUILD="0d61a2ff";
+const BUILD="ae59976e";
 const CLS="高三16班";                       /* 8班经 apply_class_tokens 自动改为 高三8班 */
 /* 云端后台配置（由 build_site.py 注入真实 url/anon/keys；enabled=false 或未配 url/anon 时完全回退本地逻辑，不影响现有功能） */
 const CLOUD={"enabled": false};
@@ -1632,7 +1631,6 @@ function drawRadar(cv,o){
   L.forEach((lb,i)=>{const a=ang(i),x=cx+Math.cos(a)*R,y=cy+Math.sin(a)*R;c.strokeStyle="#e8edf3";c.beginPath();c.moveTo(cx,cy);c.lineTo(x,y);c.stroke();c.fillStyle="#64748b";c.fillText(lb,x+Math.cos(a)*12,y+Math.sin(a)*12);});
   S.forEach(s=>{c.beginPath();L.forEach((_,i)=>{const a=ang(i),rr=R*(Math.max(0,Math.min(mx,s.data[i]||0))/mx),x=cx+Math.cos(a)*rr,y=cy+Math.sin(a)*rr;i?c.lineTo(x,y):c.moveTo(x,y);});c.closePath();c.fillStyle=s.fill||"rgba(30,58,138,.12)";c.fill();c.strokeStyle=s.color;c.lineWidth=2;c.stroke();});
 }
-function drawDonut(cv,o){const {c,W,H}=setupHi(cv);const cx=W/2,cy=H/2,R=Math.min(W,H)/2-4,r=R*0.62;c.lineWidth=R-r;c.beginPath();c.arc(cx,cy,(R+r)/2,0,7);c.strokeStyle="#eef1f6";c.stroke();const frac=Math.max(0,Math.min(1,(o.value||0)/(o.max||1)));c.beginPath();c.arc(cx,cy,(R+r)/2,-Math.PI/2,-Math.PI/2+frac*7,false);c.strokeStyle=o.color||"#1e3a8a";c.stroke();c.fillStyle="#1a2233";c.textAlign="center";c.textBaseline="middle";c.font="800 20px -apple-system,sans-serif";c.fillText(o.label||Math.round(frac*100)+"%",cx,cy-5);if(o.sub){c.fillStyle="#94a3b8";c.font="11px sans-serif";c.fillText(o.sub,cx,cy+15);}}
 function chartLegend(items){return `<div class="chart-legend">`+items.map(it=>`<span class="lg-item"><i style="background:${it.color}"></i>${it.name}</span>`).join("")+`</div>`;}
 function drawSpark(cv,o){const {c,W,H}=setupHi(cv);const d=o.data||[];if(d.length<2)return;const pad=5,mn=Math.min.apply(null,d),mx=Math.max.apply(null,d),rng=(mx-mn)||1;const x=i=>pad+(W-2*pad)*i/(d.length-1),y=v=>H-pad-(H-2*pad)*((v-mn)/rng);c.strokeStyle=o.color||"#1e3a8a";c.lineWidth=d.length>6?1.8:2.6;c.lineJoin="round";c.beginPath();d.forEach((v,i)=>{const xx=x(i),yy=y(v);i?c.lineTo(xx,yy):c.moveTo(xx,yy);});c.stroke();c.fillStyle=o.color||"#1e3a8a";c.beginPath();c.arc(x(d.length-1),y(d[d.length-1]),d.length>6?2.6:3.4,0,7);c.fill();}
 /* 迷你折线（small multiples 单科专用）：每科独立纵轴，互不重叠；o.tags 可在数据点上方标注（如班级排名） */
@@ -1830,10 +1828,9 @@ function boot(){
   window.addEventListener("resize",()=>{syncTabH();if(CUR==="tt")ttDrawNow();});
   /* 地址栏展开/收起会改变视觉视口（不改变 window 尺寸），此时实时重算成绩区高度，滚动区始终贴合可视区 */
   if(window.visualViewport){window.visualViewport.addEventListener("resize",syncTabH);window.visualViewport.addEventListener("scroll",syncTabH);}
-  /* 桌面键盘快捷键：数字键切换导航、Esc 关闭弹层、Ctrl/Cmd+K 聚焦全局搜索 */
+  /* 桌面键盘快捷键：数字键切换导航、Esc 关闭弹层、Ctrl/Cmd+K 打开全局搜索面板 */
   const TAB_KEYS=TABS.map(t=>t.items[0]);
   function closeModals(){["ttModal","impModal","randMask","shareLinkMask","newsModal","scDetailMask"].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.remove("show");});}
-  function focusSearch(){const s=document.querySelector("#stuSel");if(s)s.focus({preventScroll:true});}
   window.addEventListener("keydown",e=>{
     if((e.metaKey||e.ctrlKey)&&(e.key==="k"||e.key==="K")){e.preventDefault();openPalette();return;}
     const ae=document.activeElement;
@@ -3850,26 +3847,6 @@ function seatPU(e,pos){
   _seatLP=null;
 }
 function seatPC(pos){ if(_seatLP&&_seatLP.pos===pos){clearTimeout(_seatLP.t);_seatLP=null;} }
-async function resetSeat(){
-  const gmap=(SEAT_WORK&&SEAT_WORK.gender)?SEAT_WORK.gender:null;   /* 性别纠正按学生记录，恢复座位布局时保留 */
-  /* 发布到云端后云端即最新权威：先尝试拉云端已发布版本恢复，绝不把内置初始推上云端覆盖最新 */
-  const key=cloudSeatKey();
-  if(key&&cloudBase()){
-    try{
-      const v=await cloudGet(key);
-      if(v&&v.rows&&v.front){
-        SEAT_WORK=v; if(gmap){ if(!SEAT_WORK.gender)SEAT_WORK.gender={}; Object.assign(SEAT_WORK.gender,gmap); }
-        SEAT_SEL=null; SEAT_MODE="view"; saveSeatToLS(); _syncMeta(key,v); refresh();
-        toast("↺ 已恢复到云端已发布的最新座位"); return;
-      }
-    }catch(e){}
-  }
-  /* 云端无已发布版本（确实没发布过）才回退内置初始 */
-  SEAT_WORK=cloneSeat(DATA.seat);                                  /* 恢复初始座位布局（含 rows/front） */
-  if(gmap) SEAT_WORK.gender=gmap;                                  /* 保留此前手动纠正的性别，避免退回按姓名猜测而显示「?」 */
-  SEAT_SEL=null; SEAT_MODE="view"; saveSeatToLS();
-  toast("已恢复初始座位（性别纠正已保留）"); refresh();
-}
 /* 座位单元格：模块级，vSeat 渲染与手动调座就地更新共用，避免整页重渲染造成的抖动 */
 function seatGBadge(n){ const g=genderOf(n); const cls=g==="f"?"gf":g==="m"?"gm":"gu";
   const S='stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"';
@@ -4623,12 +4600,10 @@ function parseCSV(text){
   return rows.filter(r=>r.some(x=>(x||"").trim()!==""));
 }
 /* XLSX：ZIP 解析 + XML 解析 + DecompressionStream 解压（尽力而为，离线可用） */
-function ab2u8(b){return new Uint8Array(b);}
 function u16(b,o){return b[o]|(b[o+1]<<8);}
 function u32(b,o){return (b[o]|(b[o+1]<<8)|(b[o+2]<<16)|(b[o+3]<<24))>>>0;}
 function rdStr(b,o,l){return new TextDecoder("utf-8").decode(b.slice(o,o+l));}
 async function inflateRaw(bytes){if(typeof DecompressionStream==="undefined")throw new Error("no-ds");const ds=new DecompressionStream("deflate-raw");const st=new Blob([bytes]).stream().pipeThrough(ds);const buf=await new Response(st).arrayBuffer();return new Uint8Array(buf);}
-function findEOCD(b){for(let i=b.length-22;i>=0;i--){if(b[i]===0x50&&b[i+1]===0x4b&&b[i+2]===0x05&&b[i+3]===0x06)return i;}return -1;}
 async function parseXLSX(buf){
   const b=new Uint8Array(buf);
   let eocd=-1;for(let i=b.length-22;i>=0;i--){if(b[i]===0x50&&b[i+1]===0x4b&&b[i+2]===0x05&&b[i+3]===0x06){eocd=i;break;}}
