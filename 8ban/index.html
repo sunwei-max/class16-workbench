@@ -1048,6 +1048,36 @@ tr.rowc:active{background:#eef2ff}
 .hist-builtin{max-width:760px;margin:14px auto 0;text-align:center}
 .hist-builtin button{background:#fff;border:1.5px dashed #cbd5e1;color:#64748b;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer}
 .hist-builtin button:active{transform:scale(.97)}
+.hist-btn.preview{flex:0 0 auto;border-color:#8b5cf6;background:#f5f3ff;color:#6d28d9}
+@media(hover:hover){.hist-btn.preview:hover:not(:disabled){background:#8b5cf6;color:#fff}}
+.hist-actions{display:flex;gap:6px;flex:0 0 auto}
+/* 试用态提示条：本机已切换但未同步全班 */
+.hist-trial{display:none;flex-direction:column;gap:9px;background:linear-gradient(135deg,#fff7ed,#ffedd5);border:1.5px solid #fb923c;border-radius:12px;padding:11px 12px;margin-bottom:12px;box-shadow:0 2px 10px -6px rgba(249,115,22,.5)}
+.hist-trial.on{display:flex}
+.hist-trial .tx{font-size:12.5px;font-weight:800;color:#9a3412;line-height:1.5}
+.hist-trial .tx small{display:block;font-size:11px;font-weight:600;color:#c2410c;margin-top:2px}
+.hist-trial .acts{display:flex;gap:9px}
+.hist-trial .acts button{flex:1;border:none;border-radius:9px;padding:10px 8px;font-size:12.5px;font-weight:800;cursor:pointer;white-space:nowrap}
+.hist-trial .pub{background:#16a34a;color:#fff;box-shadow:0 2px 8px -3px rgba(22,163,74,.6)}
+.hist-trial .und{background:#fff;color:#b91c1c;border:1.5px solid #fca5a5}
+.hist-trial button:active{transform:scale(.97)}
+/* 历史版本内容预览（座位 / 课表缩略），只读、不依赖编辑态 */
+.hp-view{margin-top:10px;background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;padding:12px;overflow:auto;max-height:60vh}
+.hp-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.hp-hd b{font-size:13px;color:#1e293b}
+.hp-hd button{border:1.5px solid #cbd5e1;background:#fff;color:#64748b;border-radius:8px;padding:4px 10px;font-size:11.5px;font-weight:700;cursor:pointer}
+.hp-seat{display:grid;grid-template-columns:34px repeat(9,minmax(34px,1fr));gap:3px;min-width:340px}
+.hp-seat .hpc{border-radius:5px;padding:4px 1px;text-align:center;font-size:10px;font-weight:700;color:#1f2937;line-height:1.15;overflow:hidden;word-break:break-all}
+.hp-seat .hpl{background:#334155;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;border-radius:5px}
+.hp-seat .hpf{background:#fef3c7;color:#92400e;font-size:9px}
+.hp-seat .hpe{background:#f8fafc;color:#cbd5e1;border:1px dashed #e2e8f0}
+.hp-g{font-size:8px;margin-left:1px}
+.hp-tt{border-collapse:separate;border-spacing:1px;min-width:500px;font-size:10px}
+.hp-tt th,.hp-tt td{border:1px solid #e6ebf2;padding:3px 2px;text-align:center;white-space:nowrap}
+.hp-tt th{background:#f1f5f9;color:#64748b;font-weight:800}
+.hp-tt td.hpr{background:#f8fafc;color:#94a3b8;font-weight:700;text-align:left;padding-left:5px}
+.hp-tt td.hpc{color:#fff;font-weight:700;border-radius:3px}
+.hp-empty{color:#94a3b8;font-size:12px;text-align:center;padding:18px}
 .gender-empty{grid-column:1/-1;text-align:center;color:#16a34a;font-weight:800;font-size:15px;padding:30px 0}
 .news-wrap{position:relative;flex:1;min-height:0;background:#0f1115}
 .news-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#0f1115}
@@ -1176,8 +1206,16 @@ tr.rowc:active{background:#eef2ff}
     <button class="m-btn" onclick="closeHistory()">✕ 关闭</button>
   </div>
   <div class="hist-edit">
+    <div class="hist-trial" id="histTrial">
+      <div class="tx" id="histTrialTx">正在试用 V3<small>本机已切换，尚未同步全班</small></div>
+      <div class="acts">
+        <button class="pub" onclick="publishTrial()">✅ 发布同步全班</button>
+        <button class="und" onclick="cancelTrial()">↩ 撤销试用</button>
+      </div>
+    </div>
     <div class="note" id="histNote"></div>
     <div id="histList" class="hist-list"><div class="hist-loading">正在读取发布历史…</div></div>
+    <div id="histPreview"></div>
     <div class="hist-builtin" id="histBuiltin"></div>
   </div>
 </div>
@@ -1260,7 +1298,7 @@ try{const _imp=LS("g8_data",null);if(_imp&&_imp.exams&&_imp.meta&&_imp.meta.exam
   DATA=_imp;
   for(const k in _cfg){if(_cfg[k]!==undefined)DATA.meta[k]=_cfg[k];}
 }}catch(e){}
-const BUILD="00ab8b7e";
+const BUILD="e02942a7";
 const CLS="高三8班";                       /* 8班经 apply_class_tokens 自动改为 高三8班 */
 /* 云端后台配置（由 build_site.py 注入真实 url/anon/keys；enabled=false 或未配 url/anon 时完全回退本地逻辑，不影响现有功能） */
 const CLOUD={"enabled": true, "repo": "sunwei-max/class16-workbench-data", "branch": "main", "token": "~x000342690f074857335e0a5d2d19510e153b645c065241733e24615c245b020e3621000353095105", "obk": "gk26", "keys": {"seat16": "seat16", "seat8": "seat8", "sched": "sched", "tt8": "tt8", "tt16": "tt16"}};
@@ -2016,6 +2054,8 @@ async function cloudGetAt(key,sha){
 }
 let HIST_KIND="seat";       /* seat | tt */
 let HIST_ROWS=[];           /* 当前弹层展示的版本列表（最新在前） */
+/* 试用态：点「试用此版」只改本机、不推云端。HIST_TRIAL 保存试用前的本机快照，供撤销恢复。 */
+let HIST_TRIAL=null;        /* {kind, key, no, snapshot} snapshot=试用前的 SEAT_WORK 或 g8_tt 原值 */
 /* 历史课表规整：旧版本可能缺晚自习等新节次，补齐为 null 而非被 getTT 判「结构落后」打回内置初始；
    已有节次原样保留（即那一版的内容），缺失格显示「—」。 */
 function normalizeHistTt(v){
@@ -2027,15 +2067,65 @@ function histTime(ts){ try{const d=new Date(ts),p=n=>String(n).padStart(2,"0");
   return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes())+":"+p(d.getSeconds());
 }catch(e){return "";} }
 function closeHistory(){ const m=document.getElementById("historyModal"); if(m)m.classList.remove("show"); }
+/* 预览历史版本内容（只读）：拉该版完整数据 → 生成缩略图，不触碰任何本机状态。
+   座位用精简格子（姓名+层次色+性别角标），课表用紧凑表格；均不依赖 SEAT_WORK/编辑态。 */
+function histPreviewSeatHTML(v){
+  if(!v||!v.rows||!v.front) return '<div class="hp-empty">该版本座位数据缺失</div>';
+  const gm=v.gender||{};
+  const gbadge=nm=>{ const g=gm[nm]||genderGuess(nm);
+    return g==="f"?'<span class="hp-g" style="color:#db2777">♀</span>':g==="m"?'<span class="hp-g" style="color:#1d4ed8">♂</span>':''; };
+  const cell=nm=>{
+    if(!nm||nm==="空座") return '<div class="hpc hpe">空</div>';
+    const s=byN(nm); const bg=s?eC(s.e):"#fff";
+    return `<div class="hpc" style="background:${bg}">${nm}${gbadge(nm)}</div>`;
+  };
+  let h='<div class="hp-seat">';
+  h+=`<div class="hpl"></div>${cell(v.front[0])}<div class="hpl" style="background:#64748b">讲台</div>${cell(v.front[1])}`;
+  /* 补齐到10列（1标签+9列），前排两块占位后需再补7列 */
+  for(let k=4;k<10;k++) h+='<div></div>';
+  (v.rows||[]).forEach(r=>{
+    h+=`<div class="hpl">${r[0]||""}</div>`;
+    for(let c=1;c<=9;c++) h+=cell(r[c]);
+  });
+  h+='</div>';
+  return h;
+}
+function histPreviewTtHTML(v){
+  if(!v||!v.grid||!v.days||!v.periods) return '<div class="hp-empty">该版本课表数据缺失</div>';
+  const days=v.days, periods=v.periods, grid=v.grid;
+  let h='<table class="hp-tt"><tr><th></th>'+days.map(d=>`<th>${d}</th>`).join("")+'</tr>';
+  periods.forEach(p=>{
+    h+=`<tr><td class="hpr">${p}</td>`;
+    days.forEach(d=>{
+      const c=grid[d]&&grid[d][p];
+      if(c&&c.subj) h+=`<td class="hpc" style="background:${SCOL[c.subj]||"#94a3b8"}">${c.subj}</td>`;
+      else h+='<td style="color:#cbd5e1">—</td>';
+    });
+    h+='</tr>';
+  });
+  return h+'</table>';
+}
+async function previewHistory(i){
+  const v=HIST_ROWS[i]; if(!v) return;
+  const isTT=HIST_KIND==="tt", key=isTT?cloudTtKey():cloudSeatKey();
+  const box=document.getElementById("histPreview");
+  box.innerHTML='<div class="hp-view"><div class="hp-hd"><b>👁 预览中…</b></div><div class="hp-empty">正在读取该版本内容…</div></div>';
+  const val=await cloudGetAt(key,v.sha);
+  if(!val){ box.innerHTML='<div class="hp-view"><div class="hp-hd"><b>👁 预览</b><button onclick="closePreview()">收起 ✕</button></div><div class="hp-empty">❌ 读取失败，请重试</div></div>'; return; }
+  const body=isTT?histPreviewTtHTML(val):histPreviewSeatHTML(val);
+  box.innerHTML=`<div class="hp-view"><div class="hp-hd"><b>👁 预览 · V${HIST_ROWS.length-i}（${histTime(v.ts)}）· 只读</b><button onclick="closePreview()">收起 ✕</button></div>${body}</div>`;
+  box.scrollIntoView({block:"nearest",behavior:"smooth"});
+}
+function closePreview(){ const b=document.getElementById("histPreview"); if(b)b.innerHTML=""; }
 /* 打开发布历史弹层：kind=seat 座位表 / tt 课表。仅教师端、云端启用时有内容 */
 async function openHistory(kind){
   HIST_KIND=(kind==="tt")?"tt":"seat";
   const isTT=HIST_KIND==="tt";
   document.getElementById("histTitle").textContent=isTT?"课表":"座位表";
   document.getElementById("histNote").innerHTML=isTT
-    ? "每次点「☁ 发布到云端」都会生成一个版本，这里只显示最近 5 个。点「恢复此版」让全班一起回到那一版；恢复动作本身也会成为新版本。"
-    : "每次点「☁ 发布到云端」都会生成一个版本，这里只显示最近 5 个。点「恢复此版」连同当时的性别标注一起回到那一版；恢复动作本身也会成为新版本。";
-  document.getElementById("histBuiltin").innerHTML=`<button onclick="restoreBuiltin()">↺ 使用内置${isTT?"课表":"座位"}初始版（同步全班，当前版本仍保留）</button>`;
+    ? "每次点「☁ 发布到云端」都会生成一个版本，这里只显示最近 5 个。<b>👁 预览</b>可查看那一版的课表内容（只读）；<b>试用此版</b>只改本机、不影响全班，满意后再点「发布同步全班」，不满意可「撤销试用」。"
+    : "每次点「☁ 发布到云端」都会生成一个版本，这里只显示最近 5 个。<b>👁 预览</b>可查看那一版的座位与性别标注（只读）；<b>试用此版</b>只改本机、不影响全班，满意后再点「发布同步全班」，不满意可「撤销试用」。";
+  document.getElementById("histBuiltin").innerHTML=`<button onclick="tryBuiltin()">↺ 试用内置${isTT?"课表":"座位"}初始版（先本机预览，满意再发布）</button>`;
   const list=document.getElementById("histList");
   list.innerHTML='<div class="hist-loading">正在读取发布历史…</div>';
   document.getElementById("historyModal").classList.add("show");
@@ -2052,44 +2142,89 @@ async function openHistory(kind){
         <div class="t">${histTime(v.ts)}</div>
         <div class="s">${cur?'<span class="hist-tag cur">✓ 当前云端版本</span>':""}<span class="hist-tag">${isTT?"课表":"座位"}</span><span>${no===1?"首次发布":"第 "+no+" 版"}</span></div>
       </div>
-      ${cur?'<button class="hist-btn" disabled>已是当前</button>':`<button class="hist-btn" onclick="restoreHistory(${i})">恢复此版</button>`}
+      <div class="hist-actions">
+        <button class="hist-btn preview" onclick="previewHistory(${i})">👁 预览</button>
+        ${cur?'<button class="hist-btn" disabled>已是当前</button>':`<button class="hist-btn" onclick="tryHistory(${i})">试用此版</button>`}
+      </div>
     </div>`;
   }).join("");
+  renderTrialBar();
 }
-/* 恢复指定历史版本：拉该版内容 → 应用到本机 → 发布回云端（全班一起回退，且旧版本不丢） */
-async function restoreHistory(i){
+/* 试用指定历史版本：拉该版内容 → 只应用到本机（不推云端）→ 显示试用提示条，老师确认后再发布。
+   试用前保存本机快照，撤销可无损恢复。预览过的内容与试用相互独立。 */
+async function tryHistory(i){
   const v=HIST_ROWS[i]; if(!v){ pubToast("该版本不存在",false); return; }
   const no=HIST_ROWS.length-i;
-  if(!confirm("⚠ 恢复到 V"+no+"（"+histTime(v.ts)+"）？\n\n本机与全班都会切到这一版；当前版本仍保留在历史里，随时可切回。")) return;
   const isTT=HIST_KIND==="tt", key=isTT?cloudTtKey():cloudSeatKey();
   if(!key){ pubToast("本班无云端配置",false); return; }
+  /* 若已有未发布试用，先提示，避免覆盖丢失 */
+  if(HIST_TRIAL && !confirm("已有未发布的试用（"+HIST_TRIAL.label+"）。\n继续将先撤销上一次试用，再试用 V"+no+"。确定继续？")) return;
   pubToast("☁ 正在读取 V"+no+"…");
   let val=await cloudGetAt(key,v.sha);
   if(!val){ pubToast("❌ 读取该版本失败，请重试",false); return; }
   const good=isTT?(val.grid&&val.days&&val.periods):(val.rows&&val.front);
-  if(!good){ pubToast("❌ 该版本数据格式异常，未恢复",false); return; }
-  if(isTT){ val=normalizeHistTt(val); LSset("g8_tt",val); }
-  else{ SEAT_WORK=cloneSeat(val); SEAT_SEL=null; SEAT_MODE="view"; saveSeatToLS(); }
-  try{ await cloudSet(key,val); }
-  catch(e){ pubToast("⚠ 本机已恢复，云端同步稍后自动重试",false); closeHistory(); refresh(); return; }
-  closeHistory(); refresh();
-  pubToast("✅ 已恢复到 V"+no+" 并同步全班",true);
+  if(!good){ pubToast("❌ 该版本数据格式异常，未试用",false); return; }
+  if(isTT){ val=normalizeHistTt(val); }
+  else{ val=cloneSeat(val); }
+  /* 保存试用前快照（深拷贝，独立内存，不随后续修改变化） */
+  const snapshot=isTT
+    ? (()=>{ try{ return JSON.parse(JSON.stringify(getTT())); }catch(e){ return null; } })()
+    : (SEAT_WORK?JSON.parse(JSON.stringify(SEAT_WORK)):null);
+  HIST_TRIAL={kind:isTT?"tt":"seat", key, no, label:"V"+no, val, snapshot};
+  applyHistVal(isTT,val);
+  renderTrialBar(); refresh();
+  pubToast("👀 已在本机试用 V"+no+"（未同步全班）· 满意后点「发布同步全班」",true);
 }
-/* 兜底：直接用内置初始数据恢复（座位保留当前性别纠正，课表用 meta.tt），同样发布回云端 */
-async function restoreBuiltin(){
+/* 把一份历史数据应用到本机显示（不推云端）。getTT 需本地存在，故课表写 g8_tt 键。 */
+function applyHistVal(isTT,val){
+  if(isTT){ LSset("g8_tt",val); }
+  else{ SEAT_WORK=cloneSeat(val); SEAT_SEL=null; SEAT_MODE="view"; saveSeatToLS(); }
+}
+/* 试用提示条：有未发布试用时显示，标注版本与「尚未同步全班」 */
+function renderTrialBar(){
+  const bar=document.getElementById("histTrial"); if(!bar)return;
+  if(HIST_TRIAL){
+    document.getElementById("histTrialTx").innerHTML=`正在试用 ${HIST_TRIAL.label}<small>本机已切换，尚未同步全班 · 请确认后发布或撤销</small>`;
+    bar.classList.add("on");
+  }else{ bar.classList.remove("on"); }
+}
+/* 发布试用：把当前试用内容推到云端（全班一起切换），成功后清空试用态 */
+async function publishTrial(){
+  const t=HIST_TRIAL; if(!t){ pubToast("没有待发布的试用",false); return; }
+  try{ await cloudSet(t.key,t.val); }
+  catch(e){ pubToast("⚠ 云端暂时失败，已加入待发队列；本机仍是试用版",false); return; }
+  HIST_TRIAL=null; renderTrialBar(); closeHistory(); refresh();
+  pubToast("✅ 已发布 "+t.label+" 并同步全班",true);
+}
+/* 撤销试用：把本机数据恢复到试用期之前的快照，不触碰云端 */
+function cancelTrial(){
+  const t=HIST_TRIAL; if(!t){ pubToast("没有可撤销的试用",false); return; }
+  if(t.snapshot===null){
+    /* 试用前本机无自定义数据：课表退回构建注入值，座位退回内置布局 */
+    if(t.kind==="tt") LSset("g8_tt",JSON.parse(JSON.stringify(DATA.meta.tt||ttDefault())));
+    else{ SEAT_WORK=null; try{localStorage.removeItem(_seatKey);}catch(e){} }
+  }else{ applyHistVal(t.kind==="tt",t.snapshot); }
+  HIST_TRIAL=null; renderTrialBar(); closePreview(); refresh();
+  pubToast("↩ 已撤销试用，本机恢复原状",true);
+}
+/* 兜底：内置初始版同样走试用制——先本机试用，确认后再发布 */
+async function tryBuiltin(){
   const isTT=HIST_KIND==="tt", key=isTT?cloudTtKey():cloudSeatKey();
   if(!key){ pubToast("本班无云端配置",false); return; }
-  if(!confirm("⚠ 使用内置"+ (isTT?"课表":"座位") +"初始版并同步全班？当前版本仍保留在历史里可切回。")) return;
+  if(HIST_TRIAL && !confirm("已有未发布的试用（"+HIST_TRIAL.label+"）。\n继续将先撤销上一次试用。确定继续？")) return;
   let val;
-  if(isTT){ val=JSON.parse(JSON.stringify(DATA.meta.tt||ttDefault())); LSset("g8_tt",val); }
+  if(isTT){ val=JSON.parse(JSON.stringify(DATA.meta.tt||ttDefault())); }
   else{
     const gmap=(SEAT_WORK&&SEAT_WORK.gender)?SEAT_WORK.gender:null;
     val=cloneSeat(DATA.seat); if(gmap) val.gender=gmap;
-    SEAT_WORK=val; SEAT_SEL=null; SEAT_MODE="view"; saveSeatToLS();
   }
-  try{ await cloudSet(key,val); pubToast("✅ 已恢复内置初始版并同步全班",true); }
-  catch(e){ pubToast("⚠ 本机已恢复，云端同步稍后自动重试",false); }
-  closeHistory(); refresh();
+  const snapshot=isTT
+    ? (()=>{ try{ return JSON.parse(JSON.stringify(getTT())); }catch(e){ return null; } })()
+    : (SEAT_WORK?JSON.parse(JSON.stringify(SEAT_WORK)):null);
+  HIST_TRIAL={kind:isTT?"tt":"seat", key, no:0, label:"内置初始版", val, snapshot};
+  applyHistVal(isTT,val);
+  renderTrialBar(); refresh();
+  pubToast("👀 已在本机试用内置初始版（未同步全班）· 满意后点「发布同步全班」",true);
 }
 /* 发布到云端：不再需要口令，任何人改动即可直接同步（冲突时由 cloudSet 提示是否覆盖） */
 async function publishSeat(){
