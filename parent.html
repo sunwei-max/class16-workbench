@@ -1261,7 +1261,7 @@ try{const _imp=LS("g16_data",null);if(_imp&&_imp.exams&&_imp.meta&&_imp.meta.exa
   DATA=_imp;
   for(const k in _cfg){if(_cfg[k]!==undefined)DATA.meta[k]=_cfg[k];}
 }}catch(e){}
-const BUILD="607c19d9";
+const BUILD="5e27432d";
 const CLS="高三16班";                       /* 8班经 apply_class_tokens 自动改为 高三8班 */
 /* 云端后台配置（由 build_site.py 注入真实 url/anon/keys；enabled=false 或未配 url/anon 时完全回退本地逻辑，不影响现有功能） */
 const CLOUD={"enabled": false};
@@ -1987,14 +1987,16 @@ function cloudSeatKey(){ return (CLOUD&&CLOUD.keys)?(String(CLS).indexOf("8")>=0
 function cloudTtKey(){ return (CLOUD&&CLOUD.keys)?(String(CLS).indexOf("8")>=0?CLOUD.keys.tt8:CLOUD.keys.tt16):null; }
 function cloudSchedKey(){ return (CLOUD&&CLOUD.keys)?CLOUD.keys.sched:null; }
 /* ---------- 发布历史：GitHub 每次发布=一次 commit，天然形成可回退的版本链 ----------
-   与云同步同一仓库同一 key 文件，不新增任何存储/权限；仅用 Contents API 的 commits 列表 + 按 sha 取内容。 */
+   与云同步同一仓库同一 key 文件，不新增任何存储/权限；仅用 Contents API 的 commits 列表 + 按 sha 取内容。
+   界面只显示最近 HIST_LIMIT 个版本（用户要求「留五个版本」），云端 commit 历史不删、作安全兜底。 */
+const HIST_LIMIT=5;
 async function cloudHistory(key){
   const b=cloudBase(); if(!b) return [];
   try{
-    const r=await ghFetch(`https://api.github.com/repos/${b.repo}/commits?path=${encodeURIComponent(key+".json")}&ref=${b.branch}&per_page=100&t=${Date.now()}`,{headers:{Authorization:`Bearer ${cloudTok()}`,Accept:"application/vnd.github+json"}});
+    const r=await ghFetch(`https://api.github.com/repos/${b.repo}/commits?path=${encodeURIComponent(key+".json")}&ref=${b.branch}&per_page=${HIST_LIMIT}&t=${Date.now()}`,{headers:{Authorization:`Bearer ${cloudTok()}`,Accept:"application/vnd.github+json"}});
     if(!r.ok) return [];
     const arr=await r.json(); if(!Array.isArray(arr)) return [];
-    return arr.map(c=>{
+    return arr.slice(0,HIST_LIMIT).map(c=>{
       const msg=(c.commit&&c.commit.message)||"";
       const m=msg.match(/@\s*(\d{10,15})/);                    /* 发布时 message=update <path> @ <毫秒时间戳>，比 committer.date 更贴近本机发布时刻 */
       const ts=m?Number(m[1]):Date.parse((c.commit&&c.commit.committer&&c.commit.committer.date)||"");
@@ -2032,15 +2034,15 @@ async function openHistory(kind){
   const isTT=HIST_KIND==="tt";
   document.getElementById("histTitle").textContent=isTT?"课表":"座位表";
   document.getElementById("histNote").innerHTML=isTT
-    ? "每次点「☁ 发布到云端」都会生成一个版本。点「恢复此版」让全班一起回到那一版；恢复动作本身也会成为新版本，旧版本仍保留。"
-    : "每次点「☁ 发布到云端」都会生成一个版本。点「恢复此版」连同当时的性别标注一起回到那一版；恢复动作本身也会成为新版本，旧版本仍保留。";
+    ? "每次点「☁ 发布到云端」都会生成一个版本，这里只显示最近 5 个。点「恢复此版」让全班一起回到那一版；恢复动作本身也会成为新版本。"
+    : "每次点「☁ 发布到云端」都会生成一个版本，这里只显示最近 5 个。点「恢复此版」连同当时的性别标注一起回到那一版；恢复动作本身也会成为新版本。";
   document.getElementById("histBuiltin").innerHTML=`<button onclick="restoreBuiltin()">↺ 使用内置${isTT?"课表":"座位"}初始版（同步全班，当前版本仍保留）</button>`;
   const list=document.getElementById("histList");
   list.innerHTML='<div class="hist-loading">正在读取发布历史…</div>';
   document.getElementById("historyModal").classList.add("show");
   const key=isTT?cloudTtKey():cloudSeatKey();
   if(!key||!cloudBase()){ HIST_ROWS=[]; list.innerHTML='<div class="hist-empty">云端未启用，本机没有发布历史。发布到云端后这里会列出所有版本。</div>'; return; }
-  const arr=await cloudHistory(key); HIST_ROWS=arr;
+  const arr=(await cloudHistory(key)).slice(0,HIST_LIMIT); HIST_ROWS=arr;   /* 双重截断：即便数据源返回全部也只显示最近5个 */
   if(!arr.length){ list.innerHTML='<div class="hist-empty">还没有发布过任何版本。点「☁ 发布到云端」后就会出现第一个版本。</div>'; return; }
   const total=arr.length;
   list.innerHTML=arr.map((v,i)=>{
