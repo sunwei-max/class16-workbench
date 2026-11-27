@@ -1260,7 +1260,7 @@ try{const _imp=LS("g8_data",null);if(_imp&&_imp.exams&&_imp.meta&&_imp.meta.exam
   DATA=_imp;
   for(const k in _cfg){if(_cfg[k]!==undefined)DATA.meta[k]=_cfg[k];}
 }}catch(e){}
-const BUILD="9404328b";
+const BUILD="00ab8b7e";
 const CLS="高三8班";                       /* 8班经 apply_class_tokens 自动改为 高三8班 */
 /* 云端后台配置（由 build_site.py 注入真实 url/anon/keys；enabled=false 或未配 url/anon 时完全回退本地逻辑，不影响现有功能） */
 const CLOUD={"enabled": true, "repo": "sunwei-max/class16-workbench-data", "branch": "main", "token": "~x000342690f074857335e0a5d2d19510e153b645c065241733e24615c245b020e3621000353095105", "obk": "gk26", "keys": {"seat16": "seat16", "seat8": "seat8", "sched": "sched", "tt8": "tt8", "tt16": "tt16"}};
@@ -2168,19 +2168,23 @@ function renderHeaderInfo(){
   const d=Math.max(0,Math.ceil((getNextGK()-n)/86400000));
   document.getElementById("hDate").innerHTML=`<div class="hd-d1">${n.getMonth()+1}月${n.getDate()}日 周${wk}</div><div class="hd-d2">⏳高考 <b>${d}</b> 天</div>`;
 }
-function setExam(name){CUR_EXAM=name;go(CUR);
-  /* 用户主动切换考试时才把选中项滚入可视区（左对齐带 36px 余量），避免左侧双箭头压住可见标签；首屏/切视图不滚 */
-  const eb=document.getElementById("examBar"); if(!eb)return;
+/* 把考试条当前项滚入可视区：手机端11场考试横滑1037px，当前考试(如『期中考试』在末位)首屏完全不可见，
+   老师打开首页看到的却是一年前的高二旧考试。首屏/切考试/切视图都调用；全展开(宽屏)时条件不满足自然不动。
+   左对齐留36px余量，避免左侧渐隐提示压住标签。 */
+function scrollExamIntoView(){
+  const eb=document.getElementById("examBar"); if(!eb||!eb.clientWidth)return;
   const onb=eb.querySelector("button.on"); if(!onb)return;
   const padL=36;
-  if(onb.offsetLeft<eb.scrollLeft||onb.offsetLeft+onb.offsetWidth>eb.scrollLeft+eb.clientWidth){
+  if(onb.offsetLeft<eb.scrollLeft+padL||onb.offsetLeft+onb.offsetWidth>eb.scrollLeft+eb.clientWidth){
     eb.scrollLeft=Math.max(0,onb.offsetLeft-padL);
   }
 }
+function setExam(name){CUR_EXAM=name;go(CUR);scrollExamIntoView();}
 function renderExamBar(){
   const el=document.getElementById("examBar");
   el.innerHTML=DATA.meta.examOrder.map(n=>`<button data-e="${n}" onclick="setExam('${n}')">${n}</button>`).join("");
   refreshExamUI();
+  scrollExamIntoView();  /* 首屏即定位当前考试（原首屏不滚导致手机端只看到旧考试） */
 }
 function refreshExamUI(){
   renderHeaderInfo();
@@ -2215,6 +2219,7 @@ function go(t){
   CUR=t; CUR_TAB=TAB_OF[t];
   document.querySelectorAll("#tabbar button").forEach(b=>b.classList.toggle("on",b.dataset.tab===CUR_TAB));
   refreshExamUI();
+  scrollExamIntoView();  /* 切视图后保持当前考试可见（手机端考试条首屏/切换都定位） */
   const items=TABS.find(x=>x.k===CUR_TAB).items;
   const sub=document.getElementById("subnav");
   if(items.length>1){sub.style.display="flex";sub.innerHTML=items.map(k=>`<button class="${k===CUR?'on':''}" onclick="go('${k}')">${FNAME[k]}</button>`).join("");const onb=sub.querySelector("button.on");if(onb){const padL=36;if(onb.offsetLeft<sub.scrollLeft||onb.offsetLeft+onb.offsetWidth>sub.scrollLeft+sub.clientWidth)sub.scrollLeft=Math.max(0,onb.offsetLeft-padL);}}
