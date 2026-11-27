@@ -1064,11 +1064,13 @@ tr.rowc:active{background:#eef2ff}
 /* 历史版本内容预览（座位 / 课表缩略），只读、不依赖编辑态 */
 .hp-view{margin-top:10px;background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;padding:12px;overflow:auto;max-height:60vh}
 .hp-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
-.hp-hd b{font-size:13px;color:#1e293b}
-.hp-hd button{border:1.5px solid #cbd5e1;background:#fff;color:#64748b;border-radius:8px;padding:4px 10px;font-size:11.5px;font-weight:700;cursor:pointer}
-.hp-seat{display:grid;grid-template-columns:34px repeat(9,minmax(34px,1fr));gap:3px;min-width:340px}
-.hp-seat .hpc{border-radius:5px;padding:4px 1px;text-align:center;font-size:10px;font-weight:700;color:#1f2937;line-height:1.15;overflow:hidden;word-break:break-all}
-.hp-seat .hpl{background:#334155;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;border-radius:5px}
+.hp-hd .ht{flex:1;min-width:0}
+.hp-hd b{display:block;font-size:12.5px;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hp-hd .sub{display:block;font-size:10px;color:#94a3b8;font-weight:600;margin-top:2px}
+.hp-hd button{flex:none;white-space:nowrap;border:1.5px solid #cbd5e1;background:#fff;color:#64748b;border-radius:8px;padding:4px 10px;font-size:11.5px;font-weight:700;cursor:pointer}
+.hp-seat{display:grid;grid-template-columns:30px repeat(9,minmax(0,1fr));gap:2px;width:100%}
+.hp-seat .hpc{border-radius:5px;padding:3px 0;text-align:center;font-size:9.5px;font-weight:700;color:#1f2937;line-height:1.15;overflow:hidden;word-break:break-all}
+.hp-seat .hpl{background:#334155;color:#fff;display:flex;align-items:center;justify-content:center;font-size:8px;border-radius:5px;white-space:nowrap}
 .hp-seat .hpe{background:#f8fafc;color:#cbd5e1;border:1px dashed #e2e8f0}
 .hp-g{font-size:8px;margin-left:1px}
 .hp-tt{border-collapse:separate;border-spacing:1px;min-width:500px;font-size:10px}
@@ -1297,7 +1299,7 @@ try{const _imp=LS("g8_data",null);if(_imp&&_imp.exams&&_imp.meta&&_imp.meta.exam
   DATA=_imp;
   for(const k in _cfg){if(_cfg[k]!==undefined)DATA.meta[k]=_cfg[k];}
 }}catch(e){}
-const BUILD="2e7f164d";
+const BUILD="c32144fb";
 const CLS="高三8班";                       /* 8班经 apply_class_tokens 自动改为 高三8班 */
 /* 云端后台配置（由 build_site.py 注入真实 url/anon/keys；enabled=false 或未配 url/anon 时完全回退本地逻辑，不影响现有功能） */
 const CLOUD={"enabled": true, "repo": "sunwei-max/class16-workbench-data", "branch": "main", "token": "~x000342690f074857335e0a5d2d19510e153b645c065241733e24615c245b020e3621000353095105", "obk": "gk26", "keys": {"seat16": "seat16", "seat8": "seat8", "sched": "sched", "tt8": "tt8", "tt16": "tt16"}};
@@ -2110,7 +2112,7 @@ async function previewHistory(i){
   const val=await cloudGetAt(key,v.sha);
   if(!val){ box.innerHTML='<div class="hp-view"><div class="hp-hd"><b>👁 预览</b><button onclick="closePreview()">收起 ✕</button></div><div class="hp-empty">❌ 读取失败，请重试</div></div>'; return; }
   const body=isTT?histPreviewTtHTML(val):histPreviewSeatHTML(val);
-  box.innerHTML=`<div class="hp-view"><div class="hp-hd"><b>👁 预览 · V${HIST_ROWS.length-i}（${histTime(v.ts)}）· 只读</b><button onclick="closePreview()">收起 ✕</button></div>${body}</div>`;
+  box.innerHTML=`<div class="hp-view"><div class="hp-hd"><div class="ht"><b>👁 预览 · V${HIST_ROWS.length-i} · 只读</b><span class="sub">${histTime(v.ts)}</span></div><button onclick="closePreview()">收起 ✕</button></div>${body}</div>`;
   box.scrollIntoView({block:"nearest",behavior:"smooth"});
 }
 function closePreview(){ const b=document.getElementById("histPreview"); if(b)b.innerHTML=""; }
