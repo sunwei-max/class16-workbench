@@ -1,7 +1,7 @@
 {
-  "name": "高三8班 · 班级工作台",
-  "short_name": "8班工作台",
-  "description": "高三8班班级数据工作台（教师自用）",
+  "name": "高三16班 · 班级工作台",
+  "short_name": "16班工作台",
+  "description": "高三16班班级数据工作台（教师自用）",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
